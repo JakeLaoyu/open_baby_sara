@@ -36,253 +36,120 @@ class CustomCard extends StatefulWidget {
 }
 
 class _CustomCardState extends State<CustomCard> {
-  String lastSleepActivityText = '';
-  String lastSleepActivityTimeText = '';
-  String lastPumpActivityText = '';
-  String lastPumpActivityTimeText = '';
-
   List<ActivityModel>? feedActivities;
   List<ActivityModel>? sleepActivities;
   List<ActivityModel>? diaperActivities;
   List<ActivityModel>? pumpActivities;
+  List<ActivityModel>? babyFirstsActivities;
+  List<ActivityModel>? teethingActivities;
+  List<ActivityModel>? medicationActivities;
+  List<ActivityModel>? doctorVisitActivities;
+  List<ActivityModel>? vaccinationActivities;
+  List<ActivityModel>? feverActivities;
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ActivityBloc, ActivityState>(
       buildWhen: (previous, current) {
-        // Sadece ilgili state'lerde rebuild ol
+        // Only rebuild for relevant states.
+        // ActivityLoading is intentionally excluded — teething bottom sheet
+        // emits TeethingLoading (not ActivityLoading) to avoid affecting cards.
         return current is SleepActivityLoaded ||
             current is PumpActivityLoaded ||
-            current is ActivitiesWithDateLoaded ||
-            current is ActivityLoading;
+            current is ActivitiesWithDateLoaded;
       },
       builder: (context, state) {
-        if (state is SleepActivityLoaded) {
-          final ActivityModel? lastSleepActivity = state.activityModel;
-          getFormatLastSleepActivity(lastSleepActivity);
-        }
-        if (state is PumpActivityLoaded) {
-          final ActivityModel? lastPumpActivity = state.activityModel;
-          getFormatLastPumpActivity(lastPumpActivity);
-        }
         if (state is ActivitiesWithDateLoaded) {
           feedActivities = state.feedActivities;
           sleepActivities = state.sleepActivities;
           pumpActivities = state.pumpActivities;
           diaperActivities = state.diaperActivities;
+          babyFirstsActivities = state.babyFirstsActivities;
+          teethingActivities = state.teethingActivities;
+          medicationActivities = state.medicationActivities;
+          doctorVisitActivities = state.doctorVisitActivities;
+          vaccinationActivities = state.vaccinationActivities;
+          feverActivities = state.feverActivities;
         }
 
-        return state is ActivityLoading
-            ? Center(child: CircularProgressIndicator())
-            : Card(
-              color: widget.color,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.r),
-              ),
-              child: SizedBox(
-                height: 110.h,
-                child: Stack(
-                  children: [
-                    /// Title
-                    Positioned(
-                      top: 6.h,
-                      left: 10.w,
-                      right: 30.w,
-                      child: Text(
-                        widget.title,
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18.sp,
-                        ),
-                      ),
+        return Card(
+          color: widget.color,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.r),
+          ),
+          child: SizedBox(
+            height: 110.h,
+            child: Stack(
+              children: [
+                // Title
+                Positioned(
+                  top: 6.h,
+                  left: 10.w,
+                  right: 30.w,
+                  child: Text(
+                    widget.title,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18.sp,
                     ),
-
-                    /// Add new activity icon
-                    Positioned(
-                      top: 4.h,
-                      right: 6.w,
-                      child: CircleAvatar(
-                        radius: 16.r,
-                        backgroundColor: Theme.of(context).primaryColor,
-                        child: IconButton(
-                          onPressed: widget.voidCallback,
-                          icon: Icon(
-                            Icons.add,
-                            color: Colors.white,
-                            size: 20.sp,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Sol alt icon (asset image)
-                    Positioned(
-                      bottom: 10.h,
-                      left: 6.w,
-                      child: Image.asset(
-                        widget.imgUrl,
-                        height: 40.h,
-                        width: 40.w,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-
-                    // Icon'un yanındaki metin
-                    Positioned(
-                      bottom: 8.h,
-                      left: 45.w,
-                      right: 5.w,
-                      child: getLastActivityText(widget.activityType),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            );
+
+                // Add new activity icon
+                Positioned(
+                  top: 4.h,
+                  right: 6.w,
+                  child: GestureDetector(
+                    onTap: widget.voidCallback,
+                    child: Icon(
+                      Icons.add_circle,
+                      color: Theme.of(context).primaryColor,
+                      size: 32.sp,
+                    ),
+                  ),
+                ),
+
+                // Bottom-left asset icon
+                Positioned(
+                  bottom: 10.h,
+                  left: 6.w,
+                  child: Image.asset(
+                    widget.imgUrl,
+                    height: 40.h,
+                    width: 40.w,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+
+                // Last activity summary text
+                Positioned(
+                  bottom: 8.h,
+                  left: 45.w,
+                  right: 5.w,
+                  child: _buildLastActivityText(context, widget.activityType),
+                ),
+              ],
+            ),
+          ),
+        );
       },
     );
   }
 
-  void getFormatLastSleepActivity(ActivityModel? lastSleepActivity) {
-    if (lastSleepActivity != null) {
-      final startTime = TimeOfDay(
-        hour: lastSleepActivity.data['startTimeHour'],
-        minute: lastSleepActivity.data['startTimeMin'],
-      );
-      lastSleepActivityTimeText = startTime.format(context);
-      final int durationOfMileSeconds = lastSleepActivity.data['totalTime'];
-      final duration = Duration(milliseconds: durationOfMileSeconds);
-      final hours = duration.inHours;
-      final minutes = duration.inMinutes.remainder(60);
-      String durationTime = '${hours}h ${minutes}m';
-
-      lastSleepActivityText = '$durationTime sleep';
-    } else {
-      lastSleepActivityText = '0';
-    }
-  }
-
-  getLastUpdated() {
-    if (lastSleepActivityText == '0') {
-      return Align(
-        alignment: Alignment.center,
-        child: Text(
-          'No sleep tracked.\nTap + to add.',
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-            fontWeight: FontWeight.w600,
-            fontSize: 12.sp,
-            color: Colors.black87,
-          ),
-        ),
-      );
-    } else {
-      return RichText(
-        text: TextSpan(
-          text: 'Last Updated\n',
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-            fontWeight: FontWeight.w600,
-            fontSize: 10.sp,
-            color: Colors.black87,
-          ),
-          children: [
-            TextSpan(
-              text: '$lastSleepActivityTimeText\n',
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                fontWeight: FontWeight.w300,
-                fontSize: 11.sp,
-                color: Colors.black87,
-              ),
-            ),
-            TextSpan(
-              text: lastSleepActivityText,
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                fontWeight: FontWeight.w700,
-                fontSize: 11.sp,
-                color: Colors.black87,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
-  void getFormatLastPumpActivity(ActivityModel? lastPumpActivity) {
-    if (lastPumpActivity != null) {
-      final startTime = TimeOfDay(
-        hour:
-            lastPumpActivity.data['totalEndTimeHour'] ??
-            lastPumpActivity.data['leftSideEndTimeHour'],
-        minute:
-            lastPumpActivity.data['totalEndTimeMin'] ??
-            lastPumpActivity.data['leftSideEndTimeMin'],
-      );
-      lastPumpActivityTimeText = startTime.format(context);
-      final double amount = lastPumpActivity.data['totalAmount'] ?? 0.0;
-      final String unit = lastPumpActivity.data['totalUnit'] ?? 'mL';
-
-      lastPumpActivityText = '$amount $unit was pumped';
-    } else {
-      lastSleepActivityText = '0';
-    }
-  }
-
-  getLastPumpUpdated() {
-    if (lastSleepActivityText == '0') {
-      return Align(
-        alignment: Alignment.center,
-        child: Text(
-          'No pump tracked.\nTap + to add.',
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-            fontWeight: FontWeight.w600,
-            fontSize: 12.sp,
-            color: Colors.black87,
-          ),
-        ),
-      );
-    } else {
-      return RichText(
-        text: TextSpan(
-          text: 'Last Updated\n',
-          style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-            fontWeight: FontWeight.w600,
-            fontSize: 10.sp,
-            color: Colors.black87,
-          ),
-          children: [
-            TextSpan(
-              text: '$lastPumpActivityTimeText\n',
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                fontWeight: FontWeight.w300,
-                fontSize: 11.sp,
-                color: Colors.black87,
-              ),
-            ),
-            TextSpan(
-              text: lastPumpActivityText,
-              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                fontWeight: FontWeight.w700,
-                fontSize: 11.sp,
-                color: Colors.black87,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
-  Widget getLastActivityText(String title) {
+  Widget _buildLastActivityText(BuildContext context, String activityType) {
     final isRunning = widget.isActivityRunning ?? false;
     final String? displayText;
-    switch (title) {
+
+    switch (activityType) {
       case 'sleep':
         displayText =
             sleepActivities != null
                 ? getLastSleepSummary(sleepActivities!, isRunning, context)
                 : '➕ ${context.tr('tap_to_start_only')}';
         break;
+
       case 'breastFeed':
         displayText =
             feedActivities != null
@@ -291,32 +158,77 @@ class _CustomCardState extends State<CustomCard> {
         break;
 
       case 'pumpTotal':
-        displayText =
-            pumpActivities != null
-                ? getLastPumpSummary(pumpActivities!, context)
-                : '➕ ${context.tr('tap_to_start_only')}';
+        if (isRunning) {
+          displayText = '🍼 ${context.tr('pump_is_running')}';
+        } else {
+          displayText =
+              pumpActivities != null
+                  ? getLastPumpSummary(pumpActivities!, context)
+                  : '➕ ${context.tr('tap_to_start_only')}';
+        }
         break;
 
       case 'diaper':
         displayText =
-            pumpActivities != null
+            diaperActivities != null
                 ? getLastDiaperSummary(diaperActivities!, context)
                 : '➕ ${context.tr('tap_to_start_only')}';
         break;
+
+      case 'babyFirsts':
+        displayText =
+            babyFirstsActivities != null
+                ? getLastBabyFirstsSummary(babyFirstsActivities!, context)
+                : '➕ ${context.tr('tap_to_start_only')}';
+        break;
+
+      case 'teething':
+        displayText =
+            teethingActivities != null
+                ? getLastTeethingSummary(teethingActivities!, context)
+                : '➕ ${context.tr('tap_to_start_only')}';
+        break;
+
+      case 'medication':
+        displayText =
+            medicationActivities != null
+                ? getLastMedicationSummary(medicationActivities!, context)
+                : '➕ ${context.tr('tap_to_start_only')}';
+        break;
+
+      case 'doctorVisit':
+        displayText =
+            doctorVisitActivities != null
+                ? getLastDoctorVisitSummary(doctorVisitActivities!, context)
+                : '➕ ${context.tr('tap_to_start_only')}';
+        break;
+
+      case 'vaccination':
+        displayText =
+            vaccinationActivities != null
+                ? getLastVaccinationSummary(vaccinationActivities!, context)
+                : '➕ ${context.tr('tap_to_start_only')}';
+        break;
+
+      case 'fever':
+        displayText =
+            feverActivities != null
+                ? getLastFeverSummary(feverActivities!, context)
+                : '➕ ${context.tr('tap_to_start_only')}';
+        break;
+
       default:
         displayText = '➕ ${context.tr('tap_to_start_only')}';
     }
 
-    return Column(
-      children: [
-        Text(
-          displayText!,
-          textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.titleSmall?.copyWith(fontSize: 10.sp),
-        ),
-      ],
+    return Text(
+      displayText ?? '➕ ${context.tr('tap_to_start_only')}',
+      textAlign: TextAlign.start,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: Theme.of(
+        context,
+      ).textTheme.titleSmall?.copyWith(fontSize: 10.sp),
     );
   }
 }

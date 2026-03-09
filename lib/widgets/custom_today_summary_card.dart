@@ -8,7 +8,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class CustomTodaySummaryCard extends StatefulWidget {
   final Color colorSummaryBody;
-
   final Color colorSummaryTitle;
   final String title;
   final String babyID;
@@ -46,12 +45,117 @@ class _CustomTodaySummaryCardState extends State<CustomTodaySummaryCard> {
     }
   }
 
+  /// Builds a short "other activities" phrase (e.g. "2 diaper, 1 pump") from
+  /// non-feed, non-sleep activities for appending to the insight sentence.
+  String _buildOtherActivitiesPhrase(
+    ActivitiesWithDateLoaded state,
+    BuildContext context,
+  ) {
+    final parts = <String>[];
+    if (state.diaperActivities.isNotEmpty) {
+      parts.add('${state.diaperActivities.length} ${context.tr('diaper')}');
+    }
+    if (state.pumpActivities.isNotEmpty) {
+      parts.add('${state.pumpActivities.length} ${context.tr('pump')}');
+    }
+    if (state.medicationActivities.isNotEmpty) {
+      parts.add(
+        '${state.medicationActivities.length} ${context.tr('medication')}',
+      );
+    }
+    if (state.feverActivities.isNotEmpty) {
+      parts.add('${state.feverActivities.length} ${context.tr('fever')}');
+    }
+    if (state.vaccinationActivities.isNotEmpty) {
+      parts.add(
+        '${state.vaccinationActivities.length} ${context.tr('vaccination')}',
+      );
+    }
+    if (state.doctorVisitActivities.isNotEmpty) {
+      parts.add(
+        '${state.doctorVisitActivities.length} ${context.tr('doctor_visit')}',
+      );
+    }
+    if (state.babyFirstsActivities.isNotEmpty) {
+      parts.add(
+        '${state.babyFirstsActivities.length} ${context.tr('baby_firsts')}',
+      );
+    }
+    if (state.teethingActivities.isNotEmpty) {
+      parts.add(
+        '${state.teethingActivities.length} ${context.tr('teething')}',
+      );
+    }
+    return parts.join(', ');
+  }
+
+  /// Builds the smart insight sentence shown at the top of the card,
+  /// considering all activity types (feed, sleep, diaper, pump, health, etc.).
+  String _buildInsightSentence(
+    ActivitiesWithDateLoaded state,
+    BuildContext context,
+  ) {
+    final hasFeed = state.feedActivities.isNotEmpty;
+    final hasSleep = state.sleepActivities.isNotEmpty;
+    final otherPhrase = _buildOtherActivitiesPhrase(state, context);
+    final hasOther = otherPhrase.isNotEmpty;
+    final hasAnyActivity = hasFeed || hasSleep || hasOther;
+
+    if (!hasAnyActivity) {
+      return context.tr('today_insight_empty');
+    }
+
+    String base;
+    if (hasFeed && hasSleep) {
+      base = context.tr(
+        'today_insight_feed_sleep',
+        namedArgs: {
+          'name': widget.firstName,
+          'feedCount': state.feedActivities.length.toString(),
+          'sleepDuration': formatSleepDuration(state.sleepActivities),
+        },
+      );
+    } else if (hasFeed) {
+      base = context.tr(
+        'today_insight_feed_only',
+        namedArgs: {
+          'name': widget.firstName,
+          'feedCount': state.feedActivities.length.toString(),
+        },
+      );
+    } else if (hasSleep) {
+      base = context.tr(
+        'today_insight_sleep_only',
+        namedArgs: {
+          'name': widget.firstName,
+          'sleepDuration': formatSleepDuration(state.sleepActivities),
+        },
+      );
+    } else {
+      // Only other activities (diaper, pump, health, etc.) — no feed/sleep
+      return context.tr(
+        'today_insight_other_activities',
+        namedArgs: {
+          'name': widget.firstName,
+          'activities': otherPhrase,
+        },
+      );
+    }
+
+    if (hasOther) {
+      base = '$base · $otherPhrase';
+    }
+    return base;
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ActivityBloc, ActivityState>(
       buildWhen: (previous, current) {
-        // Sadece ActivitiesWithDateLoaded veya ActivityLoading state'lerinde rebuild ol
-        return current is ActivitiesWithDateLoaded || current is ActivityLoading;
+        // Only rebuild when today's activities are loaded.
+        // ActivityLoading is excluded to prevent teething/other bottom sheets
+        // from triggering a loading spinner on this card.
+        return current is ActivitiesWithDateLoaded;
       },
       builder: (context, state) {
         if (state is ActivitiesWithDateLoaded) {
@@ -68,6 +172,11 @@ class _CustomTodaySummaryCardState extends State<CustomTodaySummaryCard> {
             state.diaperActivities,
             context,
           );
+
+          // Sonra yapılacak: Bugünün özet cümlesi (tüm aktivitelere göre)
+          // final insightSentence = _buildInsightSentence(state, context);
+          final locale = context.locale.toLanguageTag();
+
           return Card(
             color: widget.colorSummaryBody,
             shape: RoundedRectangleBorder(
@@ -101,7 +210,7 @@ class _CustomTodaySummaryCardState extends State<CustomTodaySummaryCard> {
                       ),
                       Spacer(),
                       Text(
-                        DateFormat('MMM dd, yyyy').format(DateTime.now()),
+                        DateFormat.yMMMd(locale).format(DateTime.now()),
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -109,155 +218,190 @@ class _CustomTodaySummaryCardState extends State<CustomTodaySummaryCard> {
                     ],
                   ),
                 ),
-                SizedBox(height: 3.h),
+
+                // Sonra yapılacak: Üstte gösterilen bugün özet cümlesi
+                // // Smart insight sentence
+                // Padding(
+                //   padding: EdgeInsets.symmetric(
+                //     horizontal: 12.w,
+                //     vertical: 6.h,
+                //   ),
+                //   child: Text(
+                //     insightSentence,
+                //     textAlign: TextAlign.center,
+                //     style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                //       fontSize: 12.sp,
+                //       fontStyle: FontStyle.italic,
+                //       color: Colors.black54,
+                //     ),
+                //   ),
+                // ),
 
                 // Today Summary Body
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildFeedActivity(
-                        context.tr('feed'),
-                        'assets/images/feed_icon.png',
-                        Column(
+                      _buildActivityColumn(
+                        title: context.tr('feed'),
+                        imgUrl: 'assets/images/feed_icon.png',
+                        noDataEmoji: '🍼',
+                        activities: state.feedActivities,
+                        bodyWidget: Column(
                           children: [
                             Row(
                               children: [
                                 Text(
                                   context.tr('total:'),
-                                  style: Theme.of(context).textTheme.titleSmall
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleSmall
                                       ?.copyWith(fontSize: 12.sp),
                                 ),
                                 Text(
                                   totalFeedAmount.toString(),
-                                  style: Theme.of(context).textTheme.titleSmall
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleSmall
                                       ?.copyWith(fontSize: 12.sp),
                                 ),
                                 SizedBox(width: 5.w),
                                 Text(
-                                  totalFeedUnit.toString(),
-                                  style: Theme.of(context).textTheme.titleSmall
+                                  totalFeedUnit,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleSmall
                                       ?.copyWith(fontSize: 12.sp),
                                 ),
                               ],
                             ),
                             Text(
                               '${state.feedActivities.length} ${context.tr('times')}',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.titleSmall?.copyWith(fontSize: 12.sp),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(fontSize: 12.sp),
                             ),
                           ],
                         ),
-                        state.feedActivities,
                       ),
                       SizedBox(width: 20.w),
-                      _buildFeedActivity(
-                        context.tr('sleep'),
-                        'assets/images/sleep_icon.png',
-                        Column(
+                      _buildActivityColumn(
+                        title: context.tr('sleep'),
+                        imgUrl: 'assets/images/sleep_icon.png',
+                        noDataEmoji: '😴',
+                        activities: state.sleepActivities,
+                        bodyWidget: Column(
                           children: [
-                            Row(
-                              children: [
-                                Text(
-                                  '${context.tr('total')} $sleptFormatted',
-                                  style: Theme.of(context).textTheme.titleSmall
-                                      ?.copyWith(fontSize: 12.sp),
-                                ),
-                              ],
+                            Text(
+                              '${context.tr('total')} $sleptFormatted',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(fontSize: 12.sp),
                             ),
                             Text(
                               '${state.sleepActivities.length} ${context.tr('times')}',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.titleSmall?.copyWith(fontSize: 12.sp),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(fontSize: 12.sp),
                             ),
                           ],
                         ),
-                        state.sleepActivities,
                       ),
                       SizedBox(width: 20.w),
-                      _buildFeedActivity(
-                        context.tr("diaper"),
-                        'assets/images/diaper_icon.png',
-                        Column(
+                      _buildActivityColumn(
+                        title: context.tr('diaper'),
+                        imgUrl: 'assets/images/diaper_icon.png',
+                        noDataEmoji: '👶',
+                        activities: state.diaperActivities,
+                        bodyWidget: Column(
                           children: [
-                            Row(
-                              children: [
-                                Text(
-                                  totalDiaper!,
-                                  style: Theme.of(context).textTheme.titleSmall
-                                      ?.copyWith(fontSize: 12.sp),
-                                ),
-                              ],
-                            ),
+                            if (totalDiaper.isNotEmpty)
+                              Text(
+                                totalDiaper,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall
+                                    ?.copyWith(fontSize: 12.sp),
+                              ),
                             Text(
                               '${state.diaperActivities.length} ${context.tr("times changed.")}',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.titleSmall?.copyWith(fontSize: 12.sp),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(fontSize: 12.sp),
                             ),
                           ],
                         ),
-                        state.diaperActivities,
                       ),
                       SizedBox(width: 20.w),
-                      _buildFeedActivity(
-                        context.tr('pump'),
-                        'assets/images/pump_icon.png',
-                        Column(
+                      _buildActivityColumn(
+                        title: context.tr('pump'),
+                        imgUrl: 'assets/images/pump_icon.png',
+                        noDataEmoji: '🤱',
+                        activities: state.pumpActivities,
+                        bodyWidget: Column(
                           children: [
                             Row(
                               children: [
                                 Text(
-                                  context.tr("total:"),
-                                  style: Theme.of(context).textTheme.titleSmall
+                                  context.tr('total:'),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleSmall
                                       ?.copyWith(fontSize: 12.sp),
                                 ),
                                 Text(
                                   totalPumpAmount.toString(),
-                                  style: Theme.of(context).textTheme.titleSmall
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleSmall
                                       ?.copyWith(fontSize: 12.sp),
                                 ),
                                 SizedBox(width: 5.w),
-                                Text(
-                                  totalPumpUnit.toString(),
-                                  style: Theme.of(context).textTheme.titleSmall
-                                      ?.copyWith(fontSize: 12.sp),
-                                ),
+                                if (totalPumpUnit != null)
+                                  Text(
+                                    totalPumpUnit,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(fontSize: 12.sp),
+                                  ),
                               ],
                             ),
                             Text(
                               '${state.pumpActivities.length} ${context.tr("times")}',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.titleSmall?.copyWith(fontSize: 12.sp),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(fontSize: 12.sp),
                             ),
                           ],
                         ),
-                        state.pumpActivities,
                       ),
                     ],
                   ),
                 ),
+                SizedBox(height: 4.h),
               ],
             ),
           );
-        } else if (state is ActivityLoading) {
-          return Center(child: CircularProgressIndicator());
         } else {
-          return const SizedBox(); // ya da boş Container()
+          return const SizedBox();
         }
       },
     );
   }
 
-  Widget _buildFeedActivity(
-    String title,
-    String imgUrl,
-    Widget bodyContext,
-    List<ActivityModel> activities,
-  ) {
+  Widget _buildActivityColumn({
+    required String title,
+    required String imgUrl,
+    required String noDataEmoji,
+    required Widget bodyWidget,
+    required List<ActivityModel> activities,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       child: Column(
@@ -272,7 +416,7 @@ class _CustomTodaySummaryCardState extends State<CustomTodaySummaryCard> {
               color: Colors.white.withAlpha(150),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 8,
                   offset: Offset(2, 4),
                 ),
@@ -292,20 +436,20 @@ class _CustomTodaySummaryCardState extends State<CustomTodaySummaryCard> {
           ),
           activities.isEmpty
               ? Container(
-                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Text(
-                  '😴 ${context.tr('no_data')}',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.bold,
+                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(8.r),
                   ),
-                ),
-              )
-              : bodyContext,
+                  child: Text(
+                    '$noDataEmoji ${context.tr('no_data')}',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                )
+              : bodyWidget,
         ],
       ),
     );

@@ -644,6 +644,7 @@
   "activity_was_added": "تمت إضافة النشاط بنجاح.",
   "success": "نجاح",
   "your_baby_is_now_sleeping": "طفلك \nنائم الآن.",
+  "pump_is_running": "الشفط \nجارٍ الآن.",
   "end_time_before_start": "لا يمكن أن يكون وقت الانتهاء قبل وقت البدء.",
   "end_time_in_future": "لا يمكن أن يكون وقت الانتهاء في المستقبل.",
   "cannot_start_timer_past_date": "لا يمكن بدء المؤقت بتاريخ سابق. يرجى اختيار تاريخ اليوم لوقت البداية.",
@@ -721,5 +722,19 @@
   "current_version:":"الإصدار الحالي:",
   "latest_version:": "آخر إصدار:",
   "update_now": "تحديث الآن",
-  "maybe_later": "ربما لاحقًا"
+  "maybe_later": "ربما لاحقًا",
+  "yesterday_at": "أمس {time}",
+  "reason_label": "السبب",
+  "reaction_label": "رد الفعل",
+  "diagnosis_label": "التشخيص",
+  "notes_label": "ملاحظات",
+  "no_medication_details": "لا تفاصيل للدواء",
+  "activity_recorded": "مسجل",
+  "today_insight_feed_sleep": "{name} رضعت {feedCount} مرة · نامت {sleepDuration} اليوم 🌸",
+  "today_insight_feed_only": "{name} رضعت {feedCount} مرة اليوم 🍼",
+  "today_insight_sleep_only": "{name} نامت {sleepDuration} اليوم 🌙",
+  "today_insight_empty": "لا سجلات اليوم بعد. أضيفي أول نشاط! 👶",
+  "today_insight_other_activities": "{name} اليوم: {activities} 👶",
+  "no_activities_with_filter": "لا توجد أنشطة لهذا الفلتر.",
+  "no_activities_date_range": "لا توجد أنشطة في الفترة المحددة."
 }

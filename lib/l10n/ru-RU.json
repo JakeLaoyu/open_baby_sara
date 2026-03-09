@@ -644,6 +644,7 @@
   "activity_was_added": "Активность успешно добавлена.",
   "success": "Успех",
   "your_baby_is_now_sleeping": "Ваш малыш \nсейчас спит.",
+  "pump_is_running": "Сцеживание \nидёт.",
   "end_time_before_start": "Время окончания не может быть раньше времени начала.",
   "end_time_in_future": "Время окончания не может быть в будущем.",
   "cannot_start_timer_past_date": "Невозможно запустить таймер с прошедшей датой. Пожалуйста, выберите сегодняшнюю дату для времени начала.",
@@ -722,6 +723,19 @@
   "current_version:":"Текущая версия:",
   "latest_version:": "Последняя версия:",
   "update_now": "Обновить сейчас",
-  "maybe_later": "Может быть, позже"
-
+  "maybe_later": "Может быть, позже",
+  "yesterday_at": "Вчера в {time}",
+  "reason_label": "Причина",
+  "reaction_label": "Реакция",
+  "diagnosis_label": "Диагноз",
+  "notes_label": "Заметки",
+  "no_medication_details": "Нет данных о лекарствах",
+  "activity_recorded": "Записано",
+  "today_insight_feed_sleep": "{name} поел {feedCount} раз · спал {sleepDuration} сегодня 🌸",
+  "today_insight_feed_only": "{name} поел {feedCount} раз сегодня 🍼",
+  "today_insight_sleep_only": "{name} спал {sleepDuration} сегодня 🌙",
+  "today_insight_empty": "Сегодня записей нет. Добавьте первую активность! 👶",
+  "today_insight_other_activities": "{name} сегодня: {activities} 👶",
+  "no_activities_with_filter": "Активности для этого фильтра не найдены.",
+  "no_activities_date_range": "В выбранном периоде активностей нет."
 }

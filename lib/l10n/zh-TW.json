@@ -644,6 +644,7 @@
   "activity_was_added": "活动已成功添加。",
   "success": "成功",
   "your_baby_is_now_sleeping": "您的宝宝\n正在睡觉。",
+  "pump_is_running": "吸乳\n进行中。",
   "end_time_before_start": "结束时间不能在开始时间之前。",
   "end_time_in_future": "结束时间不能在未来。",
   "cannot_start_timer_past_date": "無法使用過去的日期啟動計時器。請為開始時間選擇今天的日期。",
@@ -722,5 +723,19 @@
   "current_version:":"目前版本：",
   "latest_version:": "最新版本：",
   "update_now": "立即更新",
-  "maybe_later": "稍後再說"
+  "maybe_later": "稍後再說",
+  "yesterday_at": "昨天 {time}",
+  "reason_label": "原因",
+  "reaction_label": "反應",
+  "diagnosis_label": "診斷",
+  "notes_label": "備注",
+  "no_medication_details": "無藥物詳情",
+  "activity_recorded": "已記錄",
+  "today_insight_feed_sleep": "{name} 今天餵了 {feedCount} 次 · 睡了 {sleepDuration} 🌸",
+  "today_insight_feed_only": "{name} 今天餵了 {feedCount} 次 🍼",
+  "today_insight_sleep_only": "{name} 今天睡了 {sleepDuration} 🌙",
+  "today_insight_empty": "今天還沒有記錄。新增第一個活動！👶",
+  "today_insight_other_activities": "{name} 今天：{activities} 👶",
+  "no_activities_with_filter": "此篩選條件無活動記錄。",
+  "no_activities_date_range": "所選日期範圍內無活動記錄。"
 }

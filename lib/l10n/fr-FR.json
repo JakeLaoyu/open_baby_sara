@@ -644,6 +644,7 @@
   "activity_was_added": "L'activité a été ajoutée avec succès.",
   "success": "Succès",
   "your_baby_is_now_sleeping": "Votre bébé \ndort maintenant.",
+  "pump_is_running": "Tirage \nen cours.",
   "end_time_before_start": "L'heure de fin ne peut pas être avant l'heure de début.",
   "end_time_in_future": "L'heure de fin ne peut pas être dans le futur.",
   "cannot_start_timer_past_date": "Impossible de démarrer le minuteur avec une date passée. Veuillez sélectionner la date d'aujourd'hui pour l'heure de début.",
@@ -722,5 +723,19 @@
   "current_version:":"Version Actuelle :",
   "latest_version:": "Dernière Version :",
   "update_now": "Mettre à Jour Maintenant",
-  "maybe_later": "Peut-être Plus Tard"
+  "maybe_later": "Peut-être Plus Tard",
+  "yesterday_at": "Hier à {time}",
+  "reason_label": "Raison",
+  "reaction_label": "Réaction",
+  "diagnosis_label": "Diagnostic",
+  "notes_label": "Notes",
+  "no_medication_details": "Aucun détail médicament",
+  "activity_recorded": "Enregistré",
+  "today_insight_feed_sleep": "{name} a mangé {feedCount} fois · dormi {sleepDuration} aujourd'hui 🌸",
+  "today_insight_feed_only": "{name} a mangé {feedCount} fois aujourd'hui 🍼",
+  "today_insight_sleep_only": "{name} a dormi {sleepDuration} aujourd'hui 🌙",
+  "today_insight_empty": "Aucun enregistrement aujourd'hui. Ajoutez la première activité ! 👶",
+  "today_insight_other_activities": "{name} aujourd'hui : {activities} 👶",
+  "no_activities_with_filter": "Aucune activité pour ce filtre.",
+  "no_activities_date_range": "Aucune activité dans la plage de dates."
 }
