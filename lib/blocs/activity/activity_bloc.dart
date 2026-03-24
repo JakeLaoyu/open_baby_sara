@@ -247,6 +247,7 @@ class ActivityBloc extends Bloc<ActivityEvent, ActivityState> {
     });
 
     on<UpdateActivity>((event, emit) async {
+      emit(ActivityLoading());
       try {
         await _activityRepository.updateActivity(event.activityModel);
         emit(ActivityUpdated());
