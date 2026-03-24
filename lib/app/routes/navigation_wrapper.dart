@@ -26,6 +26,9 @@ class _NavigationWrapperState extends State<NavigationWrapper> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<BabyBloc>().add(LoadBabies());
+    });
     getIt<AnalyticsService>().logScreenView('ActivityPage');
     checkAppUpdate(context);
   }
