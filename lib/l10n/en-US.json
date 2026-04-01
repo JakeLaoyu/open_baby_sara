@@ -747,5 +747,7 @@
   "today_insight_empty": "No records yet today. Add the first activity! 👶",
   "today_insight_other_activities": "{name} today: {activities} 👶",
   "no_activities_with_filter": "No activities found for this filter.",
-  "no_activities_date_range": "No activities in the selected date range."
+  "no_activities_date_range": "No activities in the selected date range.",
+  "reset_email_sent_title": "Email Sent!",
+  "reset_email_sent_message": "A password reset link has been sent to your email. Please check your inbox."
 }

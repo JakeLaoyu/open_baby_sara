@@ -737,5 +737,7 @@
   "today_insight_empty": "Aucun enregistrement aujourd'hui. Ajoutez la première activité ! 👶",
   "today_insight_other_activities": "{name} aujourd'hui : {activities} 👶",
   "no_activities_with_filter": "Aucune activité pour ce filtre.",
-  "no_activities_date_range": "Aucune activité dans la plage de dates."
+  "no_activities_date_range": "Aucune activité dans la plage de dates.",
+  "reset_email_sent_title": "E-mail envoyé !",
+  "reset_email_sent_message": "Un lien de réinitialisation a été envoyé à votre adresse e-mail. Veuillez vérifier votre boîte de réception."
 }

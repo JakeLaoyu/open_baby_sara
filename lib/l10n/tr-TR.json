@@ -747,5 +747,7 @@
   "today_insight_empty": "Bugün henüz kayıt yok. İlk aktiviteyi ekle! 👶",
   "today_insight_other_activities": "{name} bugün: {activities} 👶",
   "no_activities_with_filter": "Bu filtre için aktivite bulunamadı.",
-  "no_activities_date_range": "Seçilen tarih aralığında aktivite yok."
+  "no_activities_date_range": "Seçilen tarih aralığında aktivite yok.",
+  "reset_email_sent_title": "E-posta Gönderildi!",
+  "reset_email_sent_message": "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi. Lütfen gelen kutunuzu kontrol edin."
 }

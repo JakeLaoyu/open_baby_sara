@@ -737,5 +737,7 @@
   "today_insight_empty": "오늘 기록이 없어요. 첫 번째 활동을 추가해보세요! 👶",
   "today_insight_other_activities": "{name} 오늘: {activities} 👶",
   "no_activities_with_filter": "이 필터에 해당하는 활동이 없습니다.",
-  "no_activities_date_range": "선택한 날짜 범위에 활동이 없습니다."
+  "no_activities_date_range": "선택한 날짜 범위에 활동이 없습니다.",
+  "reset_email_sent_title": "이메일 전송됨!",
+  "reset_email_sent_message": "비밀번호 재설정 링크가 이메일로 전송되었습니다. 받은 편지함을 확인해 주세요."
 }
