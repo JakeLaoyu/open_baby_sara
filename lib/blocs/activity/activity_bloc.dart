@@ -28,7 +28,10 @@ class ActivityBloc extends Bloc<ActivityEvent, ActivityState> {
           event.activityModel.activityType,
         );
         await ReviewService().incrementRecordCount();
-        emit(ActivityAdded());
+        emit(ActivityAdded(
+          activityType: event.activityModel.activityType,
+          babyName: event.babyName,
+        ));
         add(LoadActivitiesWithDate(
           babyID: event.activityModel.babyID,
           day: DateTime.now(),
