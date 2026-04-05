@@ -5,7 +5,10 @@
 		<key>UIBackgroundModes</key>
 		<array>
 			<string>audio</string>
+			<string>fetch</string>
 		</array>
+		<key>NSUserNotificationUsageDescription</key>
+		<string>Sara Baby sends you gentle reminders to log sleep and feedings, and celebrates your baby's monthly milestones.</string>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>CFBundleDevelopmentRegion</key>
