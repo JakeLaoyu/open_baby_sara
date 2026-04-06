@@ -53,6 +53,32 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/sleep_widget_info" />
         </receiver>
+
+        <!-- Breastfeed Ana Ekran Widget -->
+        <receiver
+            android:name=".BreastfeedWidgetProvider"
+            android:exported="true"
+            android:label="Breastfeed Tracker">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/breastfeed_widget_info" />
+        </receiver>
+
+        <!-- Pump Ana Ekran Widget -->
+        <receiver
+            android:name=".PumpWidgetProvider"
+            android:exported="true"
+            android:label="Pump Tracker">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/pump_widget_info" />
+        </receiver>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
