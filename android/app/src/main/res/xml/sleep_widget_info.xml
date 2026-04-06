@@ -8,4 +8,4 @@
     android:updatePeriodMillis="0"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
-    android:description="Track your baby\'s sleep" />
+    android:description="@string/sleep_widget_description" />
