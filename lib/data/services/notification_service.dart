@@ -2,15 +2,17 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-// Notification IDs
+// ─── Notification ID Registry ─────────────────────────────────────────────────
 // 1001 : sleep reminder
 // 1002 : feed reminder
 // 2001–2024 : monthly milestone (month 1–24)
+// 9001 : debug test notification
 
 class NotificationService {
   NotificationService._();
@@ -21,7 +23,7 @@ class NotificationService {
 
   bool _initialized = false;
 
-  // ─── Channels ───────────────────────────────────────────────────────────────
+  // ─── Android Channels ────────────────────────────────────────────────────────
 
   static const _channelReminder = AndroidNotificationChannel(
     'sara_reminders',
@@ -39,12 +41,49 @@ class NotificationService {
     playSound: true,
   );
 
+  // ─── Notification Detail Presets (static — no allocation per call) ───────────
+
+  static const NotificationDetails _reminderDetails = NotificationDetails(
+    android: AndroidNotificationDetails(
+      'sara_reminders',
+      'Baby Reminders',
+      channelDescription: 'Gentle reminders to log baby activities',
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+      icon: '@mipmap/ic_launcher',
+    ),
+    iOS: DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    ),
+  );
+
+  static const NotificationDetails _milestoneDetails = NotificationDetails(
+    android: AndroidNotificationDetails(
+      'sara_milestones',
+      'Milestone Notifications',
+      channelDescription: 'Monthly milestone updates for your baby',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+    ),
+    iOS: DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    ),
+  );
+
   // ─── Init ────────────────────────────────────────────────────────────────────
 
   Future<void> initialize() async {
     if (_initialized) return;
 
     tz.initializeTimeZones();
+    // Set tz.local to device timezone — without this all times default to UTC.
+    final tzInfo = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(tzInfo.identifier));
 
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -55,13 +94,9 @@ class NotificationService {
     );
 
     await _plugin.initialize(
-      const InitializationSettings(
-        android: androidSettings,
-        iOS: iosSettings,
-      ),
+      const InitializationSettings(android: androidSettings, iOS: iosSettings),
     );
 
-    // Create Android channels
     final androidImpl = _plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
@@ -69,6 +104,7 @@ class NotificationService {
     await androidImpl?.createNotificationChannel(_channelMilestone);
 
     _initialized = true;
+    _log('Initialized. Timezone: ${tzInfo.identifier}');
   }
 
   // ─── Permission ──────────────────────────────────────────────────────────────
@@ -81,12 +117,9 @@ class NotificationService {
           ?.requestPermissions(alert: true, badge: true, sound: true);
       return granted ?? false;
     }
-
     if (Platform.isAndroid) {
-      final status = await Permission.notification.request();
-      return status.isGranted;
+      return (await Permission.notification.request()).isGranted;
     }
-
     return true;
   }
 
@@ -94,8 +127,7 @@ class NotificationService {
     if (Platform.isIOS) {
       final impl = _plugin.resolvePlatformSpecificImplementation<
           IOSFlutterLocalNotificationsPlugin>();
-      final pending = await impl?.checkPermissions();
-      return pending?.isEnabled ?? false;
+      return (await impl?.checkPermissions())?.isEnabled ?? false;
     }
     if (Platform.isAndroid) {
       return (await Permission.notification.status).isGranted;
@@ -103,131 +135,108 @@ class NotificationService {
     return true;
   }
 
-  // ─── Helpers ─────────────────────────────────────────────────────────────────
+  // ─── Quiet Hours ─────────────────────────────────────────────────────────────
 
-  bool _isQuietHour() {
-    final now = DateTime.now();
-    final hour = now.hour;
-    // Quiet 22:00 – 07:00
-    return hour >= 22 || hour < 7;
-  }
-
-  NotificationDetails _reminderDetails() {
-    return const NotificationDetails(
-      android: AndroidNotificationDetails(
-        'sara_reminders',
-        'Baby Reminders',
-        channelDescription: 'Gentle reminders to log baby activities',
-        importance: Importance.defaultImportance,
-        priority: Priority.defaultPriority,
-        icon: '@mipmap/ic_launcher',
-      ),
-      iOS: DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      ),
-    );
-  }
-
-  NotificationDetails _milestoneDetails() {
-    return const NotificationDetails(
-      android: AndroidNotificationDetails(
-        'sara_milestones',
-        'Milestone Notifications',
-        channelDescription: 'Monthly milestone updates for your baby',
-        importance: Importance.high,
-        priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
-      ),
-      iOS: DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      ),
-    );
+  /// Returns true if the DELIVERY time falls in the quiet window (22:00–07:00).
+  /// Checking delivery time (not current time) prevents a notification
+  /// scheduled at 21:55 from waking the parent at 23:25.
+  bool _isQuietDelivery(tz.TZDateTime scheduledTime) {
+    final h = scheduledTime.hour;
+    return h >= 22 || h < 7;
   }
 
   // ─── Sleep Reminder ──────────────────────────────────────────────────────────
 
-  /// Call this when a sleep session ends. Schedules a reminder after [afterMinutes].
+  /// Schedules a "time to log sleep" reminder [afterMinutes] from now.
+  /// In debug builds pass [debugAfterSeconds] to fire sooner (e.g. 10 s).
   Future<void> scheduleSleepReminder({
     required String babyName,
     required String title,
     required String body,
     int afterMinutes = 90,
+    int? debugAfterSeconds,
   }) async {
-    if (_isQuietHour()) return;
     if (!(await hasPermission)) return;
 
-    final scheduledTime = tz.TZDateTime.now(tz.local).add(
-      Duration(minutes: afterMinutes),
-    );
+    final delay = (kDebugMode && debugAfterSeconds != null)
+        ? Duration(seconds: debugAfterSeconds)
+        : Duration(minutes: afterMinutes);
 
-    await _plugin.zonedSchedule(
-      1001,
-      title,
-      body,
-      scheduledTime,
-      _reminderDetails(),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      payload: 'sleep',
-    );
+    final scheduledTime = tz.TZDateTime.now(tz.local).add(delay);
 
-    if (kDebugMode) {
-      debugPrint(
-        '[NotificationService] Sleep reminder scheduled in $afterMinutes min',
+    if (_isQuietDelivery(scheduledTime)) {
+      _log('Sleep reminder suppressed — delivery in quiet hours');
+      return;
+    }
+
+    try {
+      await _plugin.zonedSchedule(
+        1001,
+        title,
+        body,
+        scheduledTime,
+        _reminderDetails,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: 'sleep',
       );
+      _log('Sleep reminder → $scheduledTime');
+    } catch (e) {
+      _log('scheduleSleepReminder failed: $e');
     }
   }
 
-  Future<void> cancelSleepReminder() async {
-    await _plugin.cancel(1001);
-  }
+  Future<void> cancelSleepReminder() => _plugin.cancel(1001);
 
   // ─── Feed Reminder ───────────────────────────────────────────────────────────
 
-  /// Call this after a feed is logged. Schedules a reminder after [afterMinutes].
+  /// Schedules a "time to log feed" reminder [afterMinutes] from now.
+  /// In debug builds pass [debugAfterSeconds] to fire sooner.
   Future<void> scheduleFeedReminder({
     required String title,
     required String body,
     int afterMinutes = 150,
+    int? debugAfterSeconds,
   }) async {
-    if (_isQuietHour()) return;
     if (!(await hasPermission)) return;
 
-    final scheduledTime = tz.TZDateTime.now(tz.local).add(
-      Duration(minutes: afterMinutes),
-    );
+    final delay = (kDebugMode && debugAfterSeconds != null)
+        ? Duration(seconds: debugAfterSeconds)
+        : Duration(minutes: afterMinutes);
 
-    await _plugin.zonedSchedule(
-      1002,
-      title,
-      body,
-      scheduledTime,
-      _reminderDetails(),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      payload: 'feed',
-    );
+    final scheduledTime = tz.TZDateTime.now(tz.local).add(delay);
 
-    if (kDebugMode) {
-      debugPrint(
-        '[NotificationService] Feed reminder scheduled in $afterMinutes min',
+    if (_isQuietDelivery(scheduledTime)) {
+      _log('Feed reminder suppressed — delivery in quiet hours');
+      return;
+    }
+
+    try {
+      await _plugin.zonedSchedule(
+        1002,
+        title,
+        body,
+        scheduledTime,
+        _reminderDetails,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: 'feed',
       );
+      _log('Feed reminder → $scheduledTime');
+    } catch (e) {
+      _log('scheduleFeedReminder failed: $e');
     }
   }
 
-  Future<void> cancelFeedReminder() async {
-    await _plugin.cancel(1002);
-  }
+  Future<void> cancelFeedReminder() => _plugin.cancel(1002);
 
   // ─── Milestone Notifications ─────────────────────────────────────────────────
 
-  /// Schedule monthly milestone notifications for months 1–24 based on birth date.
+  /// Schedule monthly milestone notifications for months 1–24.
+  /// Milestones already in the past are skipped automatically.
+  /// Each notification fires exactly ONCE (no repeat).
   Future<void> scheduleMilestoneNotifications({
     required DateTime birthDate,
     required String Function(int month) titleBuilder,
@@ -235,44 +244,46 @@ class NotificationService {
   }) async {
     if (!(await hasPermission)) return;
 
-    // Cancel any previously scheduled milestones before re-scheduling
+    // Cancel any stale milestone notifications before rebuilding the schedule.
     for (int i = 1; i <= 24; i++) {
       await _plugin.cancel(2000 + i);
     }
 
     final now = DateTime.now();
+    int scheduled = 0;
 
     for (int month = 1; month <= 24; month++) {
+      // Dart normalises overflow months (e.g. Jan 31 + 1 month = Mar 2/3).
       final milestoneDate = DateTime(
         birthDate.year,
         birthDate.month + month,
         birthDate.day,
-        9, // 09:00 morning
+        9, // 09:00 local morning
         0,
       );
 
-      // Skip milestones already in the past
       if (milestoneDate.isBefore(now)) continue;
 
-      final tzScheduled = tz.TZDateTime.from(milestoneDate, tz.local);
-
-      await _plugin.zonedSchedule(
-        2000 + month,
-        titleBuilder(month),
-        bodyBuilder(month),
-        tzScheduled,
-        _milestoneDetails(),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        payload: 'milestone_$month',
-        matchDateTimeComponents: DateTimeComponents.dateAndTime,
-      );
+      try {
+        await _plugin.zonedSchedule(
+          2000 + month,
+          titleBuilder(month),
+          bodyBuilder(month),
+          tz.TZDateTime.from(milestoneDate, tz.local),
+          _milestoneDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          payload: 'milestone_$month',
+          // No matchDateTimeComponents → fires ONCE, not yearly.
+        );
+        scheduled++;
+      } catch (e) {
+        _log('Milestone month $month failed: $e');
+      }
     }
 
-    if (kDebugMode) {
-      debugPrint('[NotificationService] Milestone notifications scheduled');
-    }
+    _log('Milestone notifications scheduled: $scheduled future months');
   }
 
   Future<void> cancelAllMilestoneNotifications() async {
@@ -281,7 +292,44 @@ class NotificationService {
     }
   }
 
-  // ─── Settings (SharedPreferences) ────────────────────────────────────────────
+  // ─── Debug Helpers (kDebugMode only) ─────────────────────────────────────────
+
+  /// Fires a test notification in [afterSeconds] seconds.
+  /// Only works in debug builds — no-op in release.
+  Future<void> debugFireIn({
+    required int afterSeconds,
+    required String title,
+    required String body,
+    String payload = 'debug',
+  }) async {
+    if (!kDebugMode) return;
+    if (!(await hasPermission)) return;
+
+    final scheduledTime =
+        tz.TZDateTime.now(tz.local).add(Duration(seconds: afterSeconds));
+
+    await _plugin.zonedSchedule(
+      9001,
+      title,
+      body,
+      scheduledTime,
+      _milestoneDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      payload: payload,
+    );
+    _log('DEBUG notification → fires in $afterSeconds s');
+  }
+
+  /// Returns pending notification count + list for debug inspection.
+  Future<List<PendingNotificationRequest>> pendingList() =>
+      _plugin.pendingNotificationRequests();
+
+  /// Cancels every pending notification.
+  Future<void> cancelAll() => _plugin.cancelAll();
+
+  // ─── Settings ────────────────────────────────────────────────────────────────
 
   static const _keySleepReminders = 'notif_sleep_reminders';
   static const _keyFeedReminders = 'notif_feed_reminders';
@@ -299,18 +347,16 @@ class NotificationService {
 
   Future<void> saveSettings(NotificationSettings settings) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(
-        _keySleepReminders, settings.sleepRemindersEnabled);
-    await prefs.setBool(
-        _keyFeedReminders, settings.feedRemindersEnabled);
+    await prefs.setBool(_keySleepReminders, settings.sleepRemindersEnabled);
+    await prefs.setBool(_keyFeedReminders, settings.feedRemindersEnabled);
     await prefs.setBool(
         _keyMilestoneNotifs, settings.milestoneNotificationsEnabled);
   }
 
-  // ─── Cancel All ──────────────────────────────────────────────────────────────
+  // ─── Internal ────────────────────────────────────────────────────────────────
 
-  Future<void> cancelAll() async {
-    await _plugin.cancelAll();
+  void _log(String msg) {
+    if (kDebugMode) debugPrint('[NotificationService] $msg');
   }
 }
 
@@ -331,14 +377,12 @@ class NotificationSettings {
     bool? sleepRemindersEnabled,
     bool? feedRemindersEnabled,
     bool? milestoneNotificationsEnabled,
-  }) {
-    return NotificationSettings(
-      sleepRemindersEnabled:
-          sleepRemindersEnabled ?? this.sleepRemindersEnabled,
-      feedRemindersEnabled:
-          feedRemindersEnabled ?? this.feedRemindersEnabled,
-      milestoneNotificationsEnabled:
-          milestoneNotificationsEnabled ?? this.milestoneNotificationsEnabled,
-    );
-  }
+  }) =>
+      NotificationSettings(
+        sleepRemindersEnabled:
+            sleepRemindersEnabled ?? this.sleepRemindersEnabled,
+        feedRemindersEnabled: feedRemindersEnabled ?? this.feedRemindersEnabled,
+        milestoneNotificationsEnabled:
+            milestoneNotificationsEnabled ?? this.milestoneNotificationsEnabled,
+      );
 }
