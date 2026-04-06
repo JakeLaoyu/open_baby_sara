@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:open_baby_sara/views/debug/notification_test_panel.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:open_baby_sara/app/routes/app_router.dart';
@@ -419,6 +420,9 @@ class _AccountPageState extends State<AccountPage> {
                             ),
                           ),
                         ),
+
+                        /// Debug notification test panel (kDebugMode only)
+                        const NotificationTestPanel(),
 
                         /// Footer
                         Padding(
