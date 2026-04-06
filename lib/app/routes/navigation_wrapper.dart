@@ -3,7 +3,20 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:open_baby_sara/blocs/activity/activity_bloc.dart';
-import 'package:open_baby_sara/blocs/all_timer/sleep_timer/sleep_timer_bloc.dart';
+// Timer bloc'ları alias ile import edilir — her bloc'ta TimerRunning/Stopped/Reset
+// aynı isme sahip olduğu için prefix olmadan kullanılırsa Dart derleme hatası verir.
+import 'package:open_baby_sara/blocs/all_timer/sleep_timer/sleep_timer_bloc.dart'
+    as sleep_timer;
+import 'package:open_baby_sara/blocs/all_timer/breasfeed_left_side_timer/breasfeed_left_side_timer_bloc.dart'
+    as bf_left;
+import 'package:open_baby_sara/blocs/all_timer/breastfeed_right_side_timer/breastfeed_right_side_timer_bloc.dart'
+    as bf_right;
+import 'package:open_baby_sara/blocs/all_timer/pump_total_timer/pump_total_timer_bloc.dart'
+    as pump_total;
+import 'package:open_baby_sara/blocs/all_timer/pump_left_side_timer/pump_left_side_timer_bloc.dart'
+    as pump_left;
+import 'package:open_baby_sara/blocs/all_timer/pump_right_side_timer/pump_right_side_timer_bloc.dart'
+    as pump_right;
 import 'package:open_baby_sara/blocs/baby/baby_bloc.dart';
 import 'package:open_baby_sara/blocs/bottom_nav/bottom_nav_bloc.dart';
 import 'package:open_baby_sara/blocs/theme/theme_bloc.dart';
@@ -27,6 +40,8 @@ class NavigationWrapper extends StatefulWidget {
 
 class _NavigationWrapperState extends State<NavigationWrapper>
     with WidgetsBindingObserver {
+  String? _lastScheduledMilestoneBabyId;
+
   @override
   void initState() {
     super.initState();
@@ -51,8 +66,6 @@ class _NavigationWrapperState extends State<NavigationWrapper>
     }
   }
 
-  /// App foreground'a döndüğünde veya locale/tema değiştiğinde tüm widget'ları
-  /// güncel lokalizasyon ve tema verileriyle yeniler.
   void _refreshWidgets() {
     final babyState = context.read<BabyBloc>().state;
     final themeState = context.read<ThemeBloc>().state;
@@ -63,12 +76,104 @@ class _NavigationWrapperState extends State<NavigationWrapper>
     );
   }
 
+  void _updateBreastfeedWidget(BuildContext context) {
+    final babyState = context.read<BabyBloc>().state;
+    final themeState = context.read<ThemeBloc>().state;
+    if (babyState is! BabyLoaded || babyState.selectedBaby == null) return;
+
+    final leftState =
+        context.read<bf_left.BreasfeedLeftSideTimerBloc>().state;
+    final rightState =
+        context.read<bf_right.BreastfeedRightSideTimerBloc>().state;
+
+    DateTime? lastEndTime;
+    if (leftState is bf_left.TimerStopped && leftState.endTime != null) {
+      lastEndTime = leftState.endTime;
+    }
+    if (rightState is bf_right.TimerStopped && rightState.endTime != null) {
+      if (lastEndTime == null || rightState.endTime!.isAfter(lastEndTime)) {
+        lastEndTime = rightState.endTime;
+      }
+    }
+
+    WidgetBridgeService.updateBreastfeedWidget(
+      leftRunning: leftState is bf_left.TimerRunning,
+      leftStartTime:
+          leftState is bf_left.TimerRunning ? leftState.startTime : null,
+      rightRunning: rightState is bf_right.TimerRunning,
+      rightStartTime:
+          rightState is bf_right.TimerRunning ? rightState.startTime : null,
+      lastEndTime: lastEndTime,
+      babyName: babyState.selectedBaby!.firstName,
+      isGirlTheme: themeState is ThemeInitial && themeState.gender == 'Girl',
+    );
+  }
+
+  /// Pump widget'ını 3 bloc'un (total, left, right) güncel state'iyle günceller.
+  /// totalTimer çalışıyorsa mode='total', left/right çalışıyorsa mode='leftRight'.
+  void _updatePumpWidget(BuildContext context) {
+    final babyState = context.read<BabyBloc>().state;
+    final themeState = context.read<ThemeBloc>().state;
+    if (babyState is! BabyLoaded || babyState.selectedBaby == null) return;
+
+    final totalState =
+        context.read<pump_total.PumpTotalTimerBloc>().state;
+    final leftState =
+        context.read<pump_left.PumpLeftSideTimerBloc>().state;
+    final rightState =
+        context.read<pump_right.PumpRightSideTimerBloc>().state;
+
+    final totalRunning = totalState is pump_total.TimerRunning;
+    final lrRunning = leftState is pump_left.TimerRunning ||
+        rightState is pump_right.TimerRunning;
+
+    final String mode;
+    if (totalRunning) {
+      mode = 'total';
+    } else if (lrRunning) {
+      mode = 'leftRight';
+    } else {
+      mode = totalState is pump_total.TimerStopped ? 'total' : 'leftRight';
+    }
+
+    DateTime? lastEndTime;
+    if (totalState is pump_total.TimerStopped &&
+        totalState.endTime != null) {
+      lastEndTime = totalState.endTime;
+    }
+    if (leftState is pump_left.TimerStopped && leftState.endTime != null) {
+      if (lastEndTime == null || leftState.endTime!.isAfter(lastEndTime)) {
+        lastEndTime = leftState.endTime;
+      }
+    }
+    if (rightState is pump_right.TimerStopped &&
+        rightState.endTime != null) {
+      if (lastEndTime == null || rightState.endTime!.isAfter(lastEndTime)) {
+        lastEndTime = rightState.endTime;
+      }
+    }
+
+    WidgetBridgeService.updatePumpWidget(
+      isRunning: totalRunning || lrRunning,
+      startTime: totalRunning
+          ? totalState.startTime
+          : leftState is pump_left.TimerRunning
+              ? leftState.startTime
+              : rightState is pump_right.TimerRunning
+                  ? rightState.startTime
+                  : null,
+      lastEndTime: lastEndTime,
+      pumpMode: mode,
+      babyName: babyState.selectedBaby!.firstName,
+      isGirlTheme: themeState is ThemeInitial && themeState.gender == 'Girl',
+    );
+  }
+
   void _scheduleMilestones(
     BuildContext context,
     DateTime birthDate,
     String babyName,
   ) {
-    // Build all 24 localized strings synchronously before handing off to service
     final titles = {
       for (int m = 1; m <= 24; m++)
         m: context.tr(
@@ -95,8 +200,12 @@ class _NavigationWrapperState extends State<NavigationWrapper>
     BuildContext context,
     ActivityAdded state,
   ) async {
-    // Build localized strings before async gap
-    final babyName = state.babyName;
+    final babyState = context.read<BabyBloc>().state;
+    final fallbackName = babyState is BabyLoaded
+        ? (babyState.selectedBaby?.firstName ?? '')
+        : '';
+    final babyName =
+        state.babyName.isNotEmpty ? state.babyName : fallbackName;
     final type = state.activityType;
 
     final isFeed = type == 'breastFeed' ||
@@ -133,7 +242,7 @@ class _NavigationWrapperState extends State<NavigationWrapper>
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> _pages = [
+    final List<Widget> pages = [
       HistoryPage(),
       BabyRelaxingSoundsPage(),
       ActivityPage(),
@@ -146,11 +255,10 @@ class _NavigationWrapperState extends State<NavigationWrapper>
           listenWhen: (_, s) => s is BabyLoaded,
           listener: (context, state) {
             if (state is BabyLoaded && state.selectedBaby != null) {
-              _scheduleMilestones(
-                context,
-                state.selectedBaby!.dateTime,
-                state.selectedBaby!.firstName,
-              );
+              final baby = state.selectedBaby!;
+              if (baby.babyID == _lastScheduledMilestoneBabyId) return;
+              _lastScheduledMilestoneBabyId = baby.babyID;
+              _scheduleMilestones(context, baby.dateTime, baby.firstName);
             }
           },
         ),
@@ -162,15 +270,15 @@ class _NavigationWrapperState extends State<NavigationWrapper>
             }
           },
         ),
-        // Sleep timer değişimlerinde ana ekran widget'ını güncelle.
-        // listenWhen: sadece running↔stopped geçişinde tetikle —
-        // her saniyeki Tick event'inde değil. Native widget zamanı
-        // kendi hesaplar (startTimestamp üzerinden).
-        BlocListener<SleepTimerBloc, SleepTimerState>(
+
+        // ── Sleep widget ──────────────────────────────────────────────────
+        BlocListener<sleep_timer.SleepTimerBloc, sleep_timer.SleepTimerState>(
           listenWhen: (prev, curr) {
-            if (curr is TimerReset) return true;
-            if (prev is TimerRunning && curr is TimerStopped) return true;
-            if (prev is! TimerRunning && curr is TimerRunning) return true;
+            if (curr is sleep_timer.TimerReset) return true;
+            if (prev is sleep_timer.TimerRunning &&
+                curr is sleep_timer.TimerStopped) return true;
+            if (prev is! sleep_timer.TimerRunning &&
+                curr is sleep_timer.TimerRunning) return true;
             return false;
           },
           listener: (context, sleepState) {
@@ -183,14 +291,14 @@ class _NavigationWrapperState extends State<NavigationWrapper>
             final isGirlTheme =
                 themeState is ThemeInitial && themeState.gender == 'Girl';
 
-            if (sleepState is TimerRunning) {
+            if (sleepState is sleep_timer.TimerRunning) {
               WidgetBridgeService.updateSleepWidget(
                 isRunning: true,
                 startTime: sleepState.startTime,
                 babyName: babyName,
                 isGirlTheme: isGirlTheme,
               );
-            } else if (sleepState is TimerStopped) {
+            } else if (sleepState is sleep_timer.TimerStopped) {
               WidgetBridgeService.updateSleepWidget(
                 isRunning: false,
                 lastDurationSeconds: sleepState.duration.inSeconds,
@@ -198,7 +306,7 @@ class _NavigationWrapperState extends State<NavigationWrapper>
                 babyName: babyName,
                 isGirlTheme: isGirlTheme,
               );
-            } else if (sleepState is TimerReset) {
+            } else if (sleepState is sleep_timer.TimerReset) {
               WidgetBridgeService.updateSleepWidget(
                 isRunning: false,
                 babyName: babyName,
@@ -207,6 +315,86 @@ class _NavigationWrapperState extends State<NavigationWrapper>
             }
           },
         ),
+
+        // ── Breastfeed widget — sol taraf ─────────────────────────────────
+        BlocListener<bf_left.BreasfeedLeftSideTimerBloc,
+            bf_left.BreasfeedLeftSideTimerState>(
+          listenWhen: (prev, curr) {
+            if (curr is bf_left.TimerReset) { return true; }
+            if (prev is bf_left.TimerRunning && curr is bf_left.TimerStopped) {
+              return true;
+            }
+            if (prev is! bf_left.TimerRunning && curr is bf_left.TimerRunning) {
+              return true;
+            }
+            return false;
+          },
+          listener: (context, _) => _updateBreastfeedWidget(context),
+        ),
+
+        // ── Breastfeed widget — sağ taraf ─────────────────────────────────
+        BlocListener<bf_right.BreastfeedRightSideTimerBloc,
+            bf_right.BreastfeedRightSideTimerState>(
+          listenWhen: (prev, curr) {
+            if (curr is bf_right.TimerReset) { return true; }
+            if (prev is bf_right.TimerRunning && curr is bf_right.TimerStopped) {
+              return true;
+            }
+            if (prev is! bf_right.TimerRunning && curr is bf_right.TimerRunning) {
+              return true;
+            }
+            return false;
+          },
+          listener: (context, _) => _updateBreastfeedWidget(context),
+        ),
+
+        // ── Pump widget — total timer ──────────────────────────────────────
+        BlocListener<pump_total.PumpTotalTimerBloc,
+            pump_total.PumpTotalTimerState>(
+          listenWhen: (prev, curr) {
+            if (curr is pump_total.TimerReset) { return true; }
+            if (prev is pump_total.TimerRunning && curr is pump_total.TimerStopped) {
+              return true;
+            }
+            if (prev is! pump_total.TimerRunning && curr is pump_total.TimerRunning) {
+              return true;
+            }
+            return false;
+          },
+          listener: (context, _) => _updatePumpWidget(context),
+        ),
+
+        // ── Pump widget — sol taraf ────────────────────────────────────────
+        BlocListener<pump_left.PumpLeftSideTimerBloc,
+            pump_left.PumpLeftSideTimerState>(
+          listenWhen: (prev, curr) {
+            if (curr is pump_left.TimerReset) { return true; }
+            if (prev is pump_left.TimerRunning && curr is pump_left.TimerStopped) {
+              return true;
+            }
+            if (prev is! pump_left.TimerRunning && curr is pump_left.TimerRunning) {
+              return true;
+            }
+            return false;
+          },
+          listener: (context, _) => _updatePumpWidget(context),
+        ),
+
+        // ── Pump widget — sağ taraf ────────────────────────────────────────
+        BlocListener<pump_right.PumpRightSideTimerBloc,
+            pump_right.PumpRightSideTimerState>(
+          listenWhen: (prev, curr) {
+            if (curr is pump_right.TimerReset) { return true; }
+            if (prev is pump_right.TimerRunning && curr is pump_right.TimerStopped) {
+              return true;
+            }
+            if (prev is! pump_right.TimerRunning && curr is pump_right.TimerRunning) {
+              return true;
+            }
+            return false;
+          },
+          listener: (context, _) => _updatePumpWidget(context),
+        ),
       ],
       child: BlocBuilder<BottomNavBloc, BottomNavState>(
         builder: (context, state) {
@@ -214,61 +402,60 @@ class _NavigationWrapperState extends State<NavigationWrapper>
               state is BottomNavNext ? state.selectedIndex : 2;
 
           return Scaffold(
-          backgroundColor: Colors.transparent,
-          bottomNavigationBar: ConvexAppBar(
-            initialActiveIndex:
-                state is BottomNavNext ? state.selectedIndex : 2,
-            onTap: (int index) {
-              context.read<BottomNavBloc>().add(NavItemSelected(index));
-              final screenNames = [
-                'HistoryPage',
-                'BabyRelaxingSoundsPage',
-                'ActivityPage',
-                'RecipesPage',
-                'AccountPage',
-              ];
-              getIt<AnalyticsService>().logScreenView(screenNames[index]);
-            },
-            backgroundColor: Colors.deepPurpleAccent,
-            style: TabStyle.reactCircle,
-            activeColor: Colors.white,
-            color: Colors.white70,
-            items: [
-              TabItem(
-                icon: Icons.history_outlined,
-                title: context.tr('history'),
-              ),
-              TabItem(
-                icon: Icons.surround_sound_outlined,
-                title: context.tr('sounds'),
-              ),
-              TabItem(
-                icon: Icons.local_activity_outlined,
-                title: context.tr('activity'),
-              ),
-              TabItem(
-                icon: Icons.receipt_long_outlined,
-                title: context.tr('recipes'),
-              ),
-              TabItem(
-                icon: Icons.account_circle_outlined,
-                title: context.tr('profile'),
-              ),
-            ],
-          ),
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFFF5E6E8), Color(0xFFF6F5F5)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
+            backgroundColor: Colors.transparent,
+            bottomNavigationBar: ConvexAppBar(
+              initialActiveIndex:
+                  state is BottomNavNext ? state.selectedIndex : 2,
+              onTap: (int index) {
+                context.read<BottomNavBloc>().add(NavItemSelected(index));
+                final screenNames = [
+                  'HistoryPage',
+                  'BabyRelaxingSoundsPage',
+                  'ActivityPage',
+                  'RecipesPage',
+                  'AccountPage',
+                ];
+                getIt<AnalyticsService>().logScreenView(screenNames[index]);
+              },
+              backgroundColor: Colors.deepPurpleAccent,
+              style: TabStyle.reactCircle,
+              activeColor: Colors.white,
+              color: Colors.white70,
+              items: [
+                TabItem(
+                  icon: Icons.history_outlined,
+                  title: context.tr('history'),
+                ),
+                TabItem(
+                  icon: Icons.surround_sound_outlined,
+                  title: context.tr('sounds'),
+                ),
+                TabItem(
+                  icon: Icons.local_activity_outlined,
+                  title: context.tr('activity'),
+                ),
+                TabItem(
+                  icon: Icons.receipt_long_outlined,
+                  title: context.tr('recipes'),
+                ),
+                TabItem(
+                  icon: Icons.account_circle_outlined,
+                  title: context.tr('profile'),
+                ),
+              ],
             ),
-
-            child: SafeArea(child: _pages[currentIndex]),
-          ),
-        );
-      },
+            body: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFFF5E6E8), Color(0xFFF6F5F5)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
+              child: SafeArea(child: pages[currentIndex]),
+            ),
+          );
+        },
       ),
     );
   }
