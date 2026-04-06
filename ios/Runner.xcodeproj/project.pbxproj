@@ -285,8 +285,6 @@
 				996AFA472F83569700107355 /* SaraBabyWidget */,
 			);
 			name = SaraBabyWidgetExtension;
-			packageProductDependencies = (
-			);
 			productName = SaraBabyWidgetExtension;
 			productReference = 996AFA422F83569600107355 /* SaraBabyWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
