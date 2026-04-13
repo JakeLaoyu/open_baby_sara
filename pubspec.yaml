@@ -28,7 +28,6 @@ dependencies:
   meta: ^1.16.0
   uuid: ^4.5.1
   intl: ^0.20.2
-  convex_bottom_bar: ^3.2.0
   firebase_storage: ^12.4.5
   image_picker: ^1.1.2
   sqflite: ^2.4.2
@@ -90,11 +89,17 @@ flutter_icons:
   android: true
   ios: true
   image_path: "assets/icons/app_icon.png"
+  adaptive_icon_background: "#7B42F6"
+  adaptive_icon_foreground: "assets/icons/app_icon_foreground.png"
 
 flutter_native_splash:
   color: "#7B42F6"
-  image: assets/icons/logo.png
+  image: assets/icons/logo_transparent.png
   android: true
   ios: true
+  android_12:
+    color: "#7B42F6"
+    image: assets/icons/logo_transparent.png
+    icon_background_color: "#7B42F6"
 
 
