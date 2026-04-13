@@ -1,6 +1,6 @@
-import 'package:convex_bottom_bar/convex_bottom_bar.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:open_baby_sara/blocs/activity/activity_bloc.dart';
 // Timer bloc'ları alias ile import edilir — her bloc'ta TimerRunning/Stopped/Reset
@@ -47,10 +47,22 @@ class _NavigationWrapperState extends State<NavigationWrapper>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<BabyBloc>().add(LoadBabies());
+      if (!mounted) return;
+      context.read<BabyBloc>().add(LoadBabies());
+      // Request notification permission for users who missed the onboarding
+      // screen (existing users, Google sign-in users, etc.).
+      _ensureNotificationPermission();
     });
     getIt<AnalyticsService>().logScreenView('ActivityPage');
     checkAppUpdate(context);
+  }
+
+  /// Silently request notification permission if not yet granted.
+  /// Only asks once — subsequent app opens skip if already decided.
+  Future<void> _ensureNotificationPermission() async {
+    final already = await NotificationService.instance.hasPermission;
+    if (already) return;
+    await NotificationService.instance.requestPermission();
   }
 
   @override
@@ -403,12 +415,11 @@ class _NavigationWrapperState extends State<NavigationWrapper>
 
           return Scaffold(
             backgroundColor: Colors.transparent,
-            bottomNavigationBar: ConvexAppBar(
-              initialActiveIndex:
-                  state is BottomNavNext ? state.selectedIndex : 2,
+            bottomNavigationBar: _FloatingNavBar(
+              currentIndex: currentIndex,
               onTap: (int index) {
                 context.read<BottomNavBloc>().add(NavItemSelected(index));
-                final screenNames = [
+                const screenNames = [
                   'HistoryPage',
                   'BabyRelaxingSoundsPage',
                   'ActivityPage',
@@ -417,31 +428,12 @@ class _NavigationWrapperState extends State<NavigationWrapper>
                 ];
                 getIt<AnalyticsService>().logScreenView(screenNames[index]);
               },
-              backgroundColor: Colors.deepPurpleAccent,
-              style: TabStyle.reactCircle,
-              activeColor: Colors.white,
-              color: Colors.white70,
-              items: [
-                TabItem(
-                  icon: Icons.history_outlined,
-                  title: context.tr('history'),
-                ),
-                TabItem(
-                  icon: Icons.surround_sound_outlined,
-                  title: context.tr('sounds'),
-                ),
-                TabItem(
-                  icon: Icons.local_activity_outlined,
-                  title: context.tr('activity'),
-                ),
-                TabItem(
-                  icon: Icons.receipt_long_outlined,
-                  title: context.tr('recipes'),
-                ),
-                TabItem(
-                  icon: Icons.account_circle_outlined,
-                  title: context.tr('profile'),
-                ),
+              labels: [
+                context.tr('history'),
+                context.tr('sounds'),
+                context.tr('activity'),
+                context.tr('recipes'),
+                context.tr('profile'),
               ],
             ),
             body: Container(
@@ -456,6 +448,111 @@ class _NavigationWrapperState extends State<NavigationWrapper>
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+// ── Custom bottom navigation bar ──────────────────────────────────────────────
+
+class _FloatingNavBar extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+  final List<String> labels;
+
+  const _FloatingNavBar({
+    required this.currentIndex,
+    required this.onTap,
+    required this.labels,
+  });
+
+  static const _navBg = Colors.deepPurpleAccent;
+
+  static const _icons = [
+    Icons.history_outlined,
+    Icons.surround_sound_outlined,
+    Icons.local_activity_outlined,
+    Icons.receipt_long_outlined,
+    Icons.account_circle_outlined,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final indicatorColor = Theme.of(context).colorScheme.primary;
+    final bottomInset = MediaQuery.of(context).viewPadding.bottom;
+
+    return Container(
+      color: _navBg,
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: SizedBox(
+        height: 64.h,
+        child: Row(
+          children: List.generate(_icons.length, (i) {
+            return Expanded(
+              child: _NavItem(
+                icon: _icons[i],
+                label: labels[i],
+                isSelected: i == currentIndex,
+                indicatorColor: indicatorColor,
+                onTap: () => onTap(i),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final Color indicatorColor;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.indicatorColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
+            decoration: BoxDecoration(
+              color: isSelected ? indicatorColor : Colors.transparent,
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Icon(
+              icon,
+              size: 22.sp,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected
+                  ? Colors.white
+                  : Colors.white.withValues(alpha: 0.75),
+              fontSize: 10.sp,
+              fontWeight:
+                  isSelected ? FontWeight.w700 : FontWeight.w400,
+            ),
+          ),
+        ],
       ),
     );
   }
