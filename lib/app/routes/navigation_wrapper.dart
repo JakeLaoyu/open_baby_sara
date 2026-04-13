@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:open_baby_sara/blocs/activity/activity_bloc.dart';
@@ -415,6 +416,7 @@ class _NavigationWrapperState extends State<NavigationWrapper>
 
           return Scaffold(
             backgroundColor: Colors.transparent,
+            extendBody: true,
             bottomNavigationBar: _FloatingNavBar(
               currentIndex: currentIndex,
               onTap: (int index) {
@@ -468,7 +470,8 @@ class _FloatingNavBar extends StatelessWidget {
 
   static const _navBg = Colors.deepPurpleAccent;
 
-  static const _icons = [
+  // Outlined: seçilmemiş, Filled: seçili — görsel ayrım için
+  static const _iconsOutlined = [
     Icons.history_outlined,
     Icons.surround_sound_outlined,
     Icons.local_activity_outlined,
@@ -476,28 +479,54 @@ class _FloatingNavBar extends StatelessWidget {
     Icons.account_circle_outlined,
   ];
 
+  static const _iconsFilled = [
+    Icons.history,
+    Icons.surround_sound,
+    Icons.local_activity,
+    Icons.receipt_long,
+    Icons.account_circle,
+  ];
+
   @override
   Widget build(BuildContext context) {
     final indicatorColor = Theme.of(context).colorScheme.primary;
     final bottomInset = MediaQuery.of(context).viewPadding.bottom;
 
-    return Container(
-      color: _navBg,
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: SizedBox(
-        height: 64.h,
-        child: Row(
-          children: List.generate(_icons.length, (i) {
-            return Expanded(
-              child: _NavItem(
-                icon: _icons[i],
-                label: labels[i],
-                isSelected: i == currentIndex,
-                indicatorColor: indicatorColor,
-                onTap: () => onTap(i),
-              ),
-            );
-          }),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: _navBg,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 8,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: SizedBox(
+          // Sabit 60dp — viewport-relative değil, tüm ekranlarda aynı yükseklik
+          height: 60,
+          child: Row(
+            children: List.generate(labels.length, (i) {
+              return Expanded(
+                child: Semantics(
+                  label: labels[i],
+                  selected: i == currentIndex,
+                  button: true,
+                  child: _NavItem(
+                    iconOutlined: _iconsOutlined[i],
+                    iconFilled: _iconsFilled[i],
+                    label: labels[i],
+                    isSelected: i == currentIndex,
+                    indicatorColor: indicatorColor,
+                    onTap: () => onTap(i),
+                  ),
+                ),
+              );
+            }),
+          ),
         ),
       ),
     );
@@ -505,51 +534,61 @@ class _FloatingNavBar extends StatelessWidget {
 }
 
 class _NavItem extends StatelessWidget {
-  final IconData icon;
+  final IconData iconOutlined;
+  final IconData iconFilled;
   final String label;
   final bool isSelected;
   final Color indicatorColor;
   final VoidCallback onTap;
 
   const _NavItem({
-    required this.icon,
+    required this.iconOutlined,
+    required this.iconFilled,
     required this.label,
     required this.isSelected,
     required this.indicatorColor,
     required this.onTap,
   });
 
+  // Unselected: icon ve text aynı opacity — tutarlılık
+  static const _unselectedColor = Color(0xADFFFFFF); // white %68
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       behavior: HitTestBehavior.opaque,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
+            curve: Curves.easeInOut,
+            width: 52,
+            height: 32,
             decoration: BoxDecoration(
-              color: isSelected ? indicatorColor : Colors.transparent,
-              borderRadius: BorderRadius.circular(12.r),
+              color: isSelected
+                  ? indicatorColor
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
-              icon,
-              size: 22.sp,
-              color: Colors.white,
+              isSelected ? iconFilled : iconOutlined,
+              size: 20,
+              color: isSelected ? Colors.white : _unselectedColor,
             ),
           ),
-          SizedBox(height: 4.h),
+          const SizedBox(height: 3),
           Text(
             label,
             style: TextStyle(
-              color: isSelected
-                  ? Colors.white
-                  : Colors.white.withValues(alpha: 0.75),
-              fontSize: 10.sp,
-              fontWeight:
-                  isSelected ? FontWeight.w700 : FontWeight.w400,
+              color: isSelected ? Colors.white : _unselectedColor,
+              fontSize: 11.5.sp,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              height: 1,
             ),
           ),
         ],
