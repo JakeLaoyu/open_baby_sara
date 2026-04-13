@@ -87,10 +87,18 @@ class NotificationService {
 
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
+    // iOS: don't request permission here — we do it explicitly via
+    // requestPermission(). But DO enable foreground presentation so that
+    // show() and zonedSchedule() display banners even while the app is open.
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
       requestSoundPermission: false,
+      defaultPresentAlert: true,
+      defaultPresentBadge: true,
+      defaultPresentSound: true,
+      defaultPresentBanner: true,
+      defaultPresentList: true,
     );
 
     await _plugin.initialize(
@@ -148,19 +156,15 @@ class NotificationService {
   // ─── Sleep Reminder ──────────────────────────────────────────────────────────
 
   /// Schedules a "time to log sleep" reminder [afterMinutes] from now.
-  /// In debug builds pass [debugAfterSeconds] to fire sooner (e.g. 10 s).
   Future<void> scheduleSleepReminder({
     required String babyName,
     required String title,
     required String body,
     int afterMinutes = 90,
-    int? debugAfterSeconds,
   }) async {
     if (!(await hasPermission)) return;
 
-    final delay = (kDebugMode && debugAfterSeconds != null)
-        ? Duration(seconds: debugAfterSeconds)
-        : Duration(minutes: afterMinutes);
+    final delay = Duration(minutes: afterMinutes);
 
     final scheduledTime = tz.TZDateTime.now(tz.local).add(delay);
 
@@ -192,18 +196,14 @@ class NotificationService {
   // ─── Feed Reminder ───────────────────────────────────────────────────────────
 
   /// Schedules a "time to log feed" reminder [afterMinutes] from now.
-  /// In debug builds pass [debugAfterSeconds] to fire sooner.
   Future<void> scheduleFeedReminder({
     required String title,
     required String body,
     int afterMinutes = 150,
-    int? debugAfterSeconds,
   }) async {
     if (!(await hasPermission)) return;
 
-    final delay = (kDebugMode && debugAfterSeconds != null)
-        ? Duration(seconds: debugAfterSeconds)
-        : Duration(minutes: afterMinutes);
+    final delay = Duration(minutes: afterMinutes);
 
     final scheduledTime = tz.TZDateTime.now(tz.local).add(delay);
 
@@ -292,73 +292,6 @@ class NotificationService {
     }
   }
 
-  // ─── Debug Helpers (kDebugMode only) ─────────────────────────────────────────
-
-  /// Fires a notification IMMEDIATELY (no scheduling).
-  /// Most reliable debug test — works regardless of exact-alarm permissions.
-  /// Throws on failure so the test panel can surface the real error.
-  Future<void> debugShowNow({
-    required String title,
-    required String body,
-    int id = 9001,
-    String payload = 'debug',
-  }) async {
-    if (!kDebugMode) return;
-    final allowed = await hasPermission;
-    if (!allowed) throw Exception('Notification permission not granted');
-    // show() delivers instantly — no scheduling engine involved.
-    await _plugin.show(id, title, body, _milestoneDetails, payload: payload);
-    _log('DEBUG show() fired instantly (id $id)');
-  }
-
-  /// Schedules a notification [afterSeconds] from now using alarmClock mode
-  /// (reliable on Android — fires even in battery saver).
-  /// Throws on failure so the test panel can surface the real error.
-  Future<void> debugFireIn({
-    required int afterSeconds,
-    required String title,
-    required String body,
-    int id = 9002,
-    String payload = 'debug',
-  }) async {
-    if (!kDebugMode) return;
-    final allowed = await hasPermission;
-    if (!allowed) throw Exception('Notification permission not granted');
-
-    final scheduledTime =
-        tz.TZDateTime.now(tz.local).add(Duration(seconds: afterSeconds));
-
-    // alarmClock mode fires reliably — inexact mode can defer small delays
-    // (even 10 s) by minutes/hours on battery-saver devices.
-    await _plugin.zonedSchedule(
-      id,
-      title,
-      body,
-      scheduledTime,
-      _milestoneDetails,
-      androidScheduleMode: AndroidScheduleMode.alarmClock,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      payload: payload,
-    );
-    _log('DEBUG scheduled → fires in $afterSeconds s (id $id)');
-  }
-
-  /// Returns pending notification list for debug inspection.
-  Future<List<PendingNotificationRequest>> pendingList() =>
-      _plugin.pendingNotificationRequests();
-
-  /// Returns current permission + initialization status for the debug panel.
-  Future<Map<String, dynamic>> debugStatus() async {
-    final allowed = await hasPermission;
-    final pending = await pendingList();
-    return {
-      'initialized': _initialized,
-      'permission': allowed,
-      'timezone': tz.local.name,
-      'pendingCount': pending.length,
-    };
-  }
 
   /// Cancels every pending notification.
   Future<void> cancelAll() => _plugin.cancelAll();
