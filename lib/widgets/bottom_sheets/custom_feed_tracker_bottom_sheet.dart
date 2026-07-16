@@ -97,7 +97,7 @@ class _CustomFeedTrackerBottomSheetState
         feedAmout = (data['totalAmount'] ?? 0).toDouble();
         feedUnit = data['totalUnit'];
         notesBottleFeedController.text = data['notes'] ?? '';
-        _tabController.index = 1;
+        _tabController.index = 0;
         
         // Backward compatibility: use feedingTimeDate if available, otherwise use activityDateTime
         if (data['feedingTimeDate'] != null) {
@@ -107,6 +107,7 @@ class _CustomFeedTrackerBottomSheetState
         }
       } else if (widget.existingActivity!.activityType ==
           ActivityType.breastFeed.name) {
+        _tabController.index = 1;
         // Backward compatibility: use startTimeDate and endTimeDate if available, otherwise get date from activityDateTime
         if (data['leftSideStartTimeDate'] != null) {
           leftSideStartTime = DateTime.parse(data['leftSideStartTimeDate']);
@@ -371,9 +372,9 @@ class _CustomFeedTrackerBottomSheetState
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.favorite_rounded, size: 16),
+                            Icon(Icons.local_drink_rounded, size: 16),
                             SizedBox(width: 4.w),
-                            Text(context.tr("breastfeed")),
+                            Text(context.tr("bottle_feed")),
                           ],
                         ),
                       ),
@@ -383,9 +384,9 @@ class _CustomFeedTrackerBottomSheetState
                           mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.local_drink_rounded, size: 16),
+                            Icon(Icons.favorite_rounded, size: 16),
                             SizedBox(width: 4.w),
-                            Text(context.tr("bottle_feed")),
+                            Text(context.tr("breastfeed")),
                           ],
                         ),
                       ),
@@ -398,8 +399,8 @@ class _CustomFeedTrackerBottomSheetState
                     physics: BouncingScrollPhysics(),
                     controller: _tabController,
                     children: <Widget>[
-                      customBreastFeedTracker(),
                       customBottlerFeedTracker(),
+                      customBreastFeedTracker(),
                     ],
                   ),
                 ),
@@ -417,12 +418,12 @@ class _CustomFeedTrackerBottomSheetState
 
     final String activityType = widget.isEdit
         ? widget.existingActivity!.activityType
-        : (_tabController.index == 1
+        : (_tabController.index == 0
             ? ActivityType.bottleFeed.name
             : ActivityType.breastFeed.name);
 
     // Validation for bottle feed
-    if (_tabController.index == 1) {
+    if (_tabController.index == 0) {
       // Scenario 4.3: Eksik Alanlar (Bottle Feed)
       if (selectedMainActivity == null || selectedMainActivity!.isEmpty) {
         _showError(context.tr("please_complete_all_fields"));
@@ -523,7 +524,7 @@ class _CustomFeedTrackerBottomSheetState
     }
 
     final data =
-        _tabController.index == 1
+        _tabController.index == 0
             ? {
               // New format: Full DateTime objects
               'feedingTimeDate': selectedDatetime.toIso8601String(),
