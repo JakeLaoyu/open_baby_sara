@@ -59,7 +59,8 @@ class _UnitInputFieldWithToggleState extends State<UnitInputFieldWithToggle> {
     final newUnit = index == 0 ? 'ml' : 'oz';
     final currentValue = double.tryParse(_controller.text);
     if (currentValue != null) {
-      final converted = convert(currentValue, selectedUnit);
+      final converted =
+          double.parse(convert(currentValue, selectedUnit).toStringAsFixed(1));
       _controller.text = converted.toStringAsFixed(1);
       widget.onChanged(converted, newUnit);
     }
