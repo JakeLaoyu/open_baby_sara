@@ -32,7 +32,6 @@ import 'package:open_baby_sara/core/constant/locale_constants.dart';
 import 'package:open_baby_sara/core/widget_bridge/widget_bridge_service.dart';
 import 'package:open_baby_sara/data/repositories/locator.dart';
 import 'package:open_baby_sara/data/services/notification_service.dart';
-import 'package:open_baby_sara/data/services/review_service.dart';
 import 'package:open_baby_sara/views/onboarding/welcome_page.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -51,7 +50,6 @@ void main() async {
   await setupLocator();
   await WidgetBridgeService.initialize();
   await NotificationService.instance.initialize();
-  await ReviewService().checkIfShouldRequestReview();
 
   runApp(
     EasyLocalization(

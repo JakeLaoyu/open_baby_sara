@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - Paylaşılan sabitler
 
 enum WidgetAppGroup {
-    static let id = "group.com.suleymansurucu.sarababy"
+    static let id = "group.com.mindhex.mybabyapp"
 }
 
 // Flutter'daki AppColors ile birebir eşleşen sabitler
