@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:open_baby_sara/blocs/medication/medication_bloc.dart';
@@ -101,7 +102,7 @@ Future<void> showMedicationDialog({
                               children: [
                                 Expanded(
                                   child: CustomTextFormField(
-                                    hintText: 'Add a Medication',
+                                    hintText: 'add_a_medication'.tr(),
                                     isNotes: true,
                                     controller: addMedicationController,
                                   ),
@@ -218,7 +219,7 @@ Future<void> showMedicationDialog({
                                                         () => Navigator.pop(
                                                           context,
                                                         ),
-                                                    child: Text('Cancel'),
+                                                    child: Text('cancel'.tr()),
                                                   ),
                                                   TextButton(
                                                     onPressed: () {

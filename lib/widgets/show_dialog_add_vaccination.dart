@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:open_baby_sara/blocs/vaccination/vaccination_bloc.dart';
@@ -99,7 +100,7 @@ Future<void> showDialogAddAndVaccination({
                               children: [
                                 Expanded(
                                   child: CustomTextFormField(
-                                    hintText: 'Add a Vaccination',
+                                    hintText: 'add_a_vaccination'.tr(),
                                     isNotes: true,
                                     controller: addMedicationController,
                                   ),
@@ -212,7 +213,7 @@ Future<void> showDialogAddAndVaccination({
                                                         () => Navigator.pop(
                                                           context,
                                                         ),
-                                                    child: Text('Cancel'),
+                                                    child: Text('cancel'.tr()),
                                                   ),
                                                   TextButton(
                                                     onPressed: () {

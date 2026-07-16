@@ -115,7 +115,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                                     ),
                                     SizedBox(height: 20.h),
                                     CustomTextFormField(
-                                      hintText: "Email",
+                                      hintText: 'email'.tr(),
                                       controller: _emailController,
                                       isPassword: false,
                                       validator:

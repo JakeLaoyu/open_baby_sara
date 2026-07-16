@@ -226,7 +226,7 @@ class _CaregiverSignInPageState extends State<CaregiverSignInPage> {
                               ),
                               SizedBox(height: 7.h),
                               CustomTextFormField(
-                                hintText: 'Email',
+                                hintText: 'email'.tr(),
                                 isPassword: false,
                                 controller: _emailController,
                                 validator:

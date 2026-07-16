@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -141,7 +142,7 @@ class _UnitInputFieldWithToggleState extends State<UnitInputFieldWithToggle> {
                     fontSize: 16.sp,
                   ),
                   decoration: InputDecoration(
-                    hintText: 'Enter amount',
+                    hintText: 'enter_amount'.tr(),
                     hintStyle: TextStyle(
                       color: Colors.grey.shade400,
                       fontSize: 16.sp,

@@ -529,9 +529,9 @@ class _HistoryPageState extends State<HistoryPage> {
     } else {
       showDialog(
         context: context,
-        builder: (_) => const AlertDialog(
-          title: Text('Unsupported'),
-          content: Text('Editing this activity is not supported yet.'),
+        builder: (_) => AlertDialog(
+          title: Text('unsupported'.tr()),
+          content: Text('editing_not_supported'.tr()),
         ),
       );
     }

@@ -459,7 +459,7 @@ class _EditBabyPageState extends State<EditBabyPage> {
       } else {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text("No changes detected")));
+        ).showSnackBar(SnackBar(content: Text('no_changes_detected'.tr())));
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(

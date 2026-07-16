@@ -58,6 +58,7 @@ void main() async {
       supportedLocales: supportedLocales.map((item) => item.locale).toList(),
       path: 'lib/l10n',
       fallbackLocale: Locale('en', 'US'),
+      useFallbackTranslations: true,
       child: ScreenUtilInit(
         designSize: Size(360, 690),
         minTextAdapt: true,

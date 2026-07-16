@@ -216,7 +216,7 @@ class _CustomBabyTimelineHeaderCardState
                       }
                       Navigator.pop(context);
                     },
-                    child: Text('Done'),
+                    child: Text('done'.tr()),
                   ),
                 ],
               );
@@ -466,7 +466,7 @@ class _CustomBabyTimelineHeaderCardState
                       }
                     },
                     icon: Icon(Icons.filter_alt_outlined, size: 16.sp),
-                    label: Text('Filter', style: TextStyle(fontSize: 12.sp)),
+                    label: Text('filter'.tr(), style: TextStyle(fontSize: 12.sp)),
                     style: ElevatedButton.styleFrom(
                       padding: EdgeInsets.symmetric(
                         horizontal: 12.w,

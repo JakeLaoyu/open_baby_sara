@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:open_baby_sara/blocs/bottom_nav/bottom_nav_bloc.dart';
@@ -37,26 +38,26 @@ class CustomBottomNavBar extends StatelessWidget {
                 type: BottomNavigationBarType.fixed,
                 selectedItemColor: Colors.white,
                 unselectedItemColor: Colors.white60,
-                items: const [
+                items: [
                   BottomNavigationBarItem(
                     icon: Icon(Icons.local_activity_outlined),
-                    label: 'Activity',
+                    label: 'activity'.tr(),
                   ),
                   BottomNavigationBarItem(
                     icon: Icon(Icons.history_outlined),
-                    label: 'History',
+                    label: 'history'.tr(),
                   ),
                   BottomNavigationBarItem(
                     icon: Icon(Icons.surround_sound_outlined),
-                    label: 'Sounds',
+                    label: 'sounds'.tr(),
                   ),
                   BottomNavigationBarItem(
                     icon: Icon(Icons.receipt_long_outlined),
-                    label: 'Recipes',
+                    label: 'recipes'.tr(),
                   ),
                   BottomNavigationBarItem(
                     icon: Icon(Icons.account_circle_outlined),
-                    label: 'Account',
+                    label: 'profile'.tr(),
                   ),
                 ],
               ),
