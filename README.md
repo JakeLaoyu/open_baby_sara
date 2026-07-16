@@ -172,8 +172,16 @@ flutter run
 
 ## 📲 Deployment
 
-- ✅ Published on **Google Play** and **Apple App Store**
-- ✅ Firebase Hosting for optional web admin panel
+### Install on a physical iPhone
+
+Use the interactive deploy script — it builds the release bundle, lists connected devices, and installs onto the one you pick:
+
+```bash
+./scripts/deploy_ios.sh              # build release + pick device + install
+./scripts/deploy_ios.sh --no-build   # reinstall the existing build output
+```
+
+Requirements: Xcode with a signing team configured, and the iPhone connected via USB and unlocked (Developer Mode enabled on iOS 16+).
 
 ---
 

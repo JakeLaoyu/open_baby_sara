@@ -16,7 +16,7 @@ class WidgetDataContract {
   static const String pumpWidgetAndroid    = 'PumpWidgetProvider';
 
   // iOS App Group — Xcode'da Runner ve widget extension'a eklenmesi gerekir.
-  static const String appGroupId = 'group.com.suleymansurucu.sarababy';
+  static const String appGroupId = 'group.com.mindhex.mybabyapp';
 
   // ─── Meta ─────────────────────────────────────────────────────────────────
   /// 'girl' veya 'boy'
