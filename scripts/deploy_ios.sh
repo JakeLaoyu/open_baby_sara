@@ -20,8 +20,11 @@ while IFS= read -r line; do
   uuid="$(echo "$line" | grep -oE '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' || true)"
   [[ -z "$uuid" ]] && continue
   name="$(echo "$line" | sed -E 's/   +.*$//' | sed 's/[[:space:]]*$//')"
+  # 状态可能是 available (paired)、connected（USB 直连）或 unavailable
   state="unavailable"
-  echo "$line" | grep -q "available" && ! echo "$line" | grep -q "unavailable" && state="available"
+  if ! echo "$line" | grep -q "unavailable"; then
+    echo "$line" | grep -qE "available|connected" && state="available"
+  fi
   DEVICES+=("$uuid|$name|$state")
 done <<< "$DEVICE_LIST"
 
