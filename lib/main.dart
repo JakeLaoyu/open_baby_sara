@@ -29,6 +29,7 @@ import 'package:open_baby_sara/blocs/sound_relaxing/sound_relaxing_bloc.dart';
 import 'package:open_baby_sara/blocs/theme/theme_bloc.dart';
 import 'package:open_baby_sara/blocs/vaccination/vaccination_bloc.dart';
 import 'package:open_baby_sara/core/constant/locale_constants.dart';
+import 'package:open_baby_sara/core/utils/script_aware_asset_loader.dart';
 import 'package:open_baby_sara/core/widget_bridge/widget_bridge_service.dart';
 import 'package:open_baby_sara/data/repositories/locator.dart';
 import 'package:open_baby_sara/data/services/notification_service.dart';
@@ -55,8 +56,12 @@ void main() async {
 
   runApp(
     EasyLocalization(
-      supportedLocales: supportedLocales.map((item) => item.locale).toList(),
+      supportedLocales: [
+        ...supportedLocales.map((item) => item.locale),
+        ...scriptMatchingLocales,
+      ],
       path: 'lib/l10n',
+      assetLoader: const ScriptAwareAssetLoader(),
       fallbackLocale: Locale('en', 'US'),
       useFallbackTranslations: true,
       child: ScreenUtilInit(

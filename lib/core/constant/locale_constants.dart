@@ -24,3 +24,12 @@ const supportedLocales = [
     locale: Locale('id', 'ID'),
   ),
 ];
+
+/// Script-only Chinese locales used for device-locale matching. They are not
+/// shown in the language picker; ScriptAwareAssetLoader maps them onto the
+/// zh-CN / zh-TW translation files. Keep them AFTER the picker locales so
+/// exact country matches (zh_CN, zh_TW) win first.
+const scriptMatchingLocales = [
+  Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hans'),
+  Locale.fromSubtags(languageCode: 'zh', scriptCode: 'Hant'),
+];
