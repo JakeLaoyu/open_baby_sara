@@ -268,7 +268,7 @@ class _SignUpPageState extends State<SignUpPage> {
                                 ),
                                 SizedBox(height: 7.h),
                                 CustomTextFormField(
-                                  hintText: "Email",
+                                  hintText: 'email'.tr(),
                                   controller: _emailController,
                                   isPassword: false,
                                   validator:

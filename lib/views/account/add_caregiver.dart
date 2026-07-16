@@ -140,7 +140,7 @@ class _AddCaregiverState extends State<AddCaregiver> {
                               SizedBox(height: 4.h),
                               CustomTextFormField(
                                 controller: emailController,
-                                hintText: 'Email',
+                                hintText: 'email'.tr(),
                                 isPassword: false,
                                 validator:
                                     (value) =>

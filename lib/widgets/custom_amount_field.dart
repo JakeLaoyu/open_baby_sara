@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:keyboard_actions/keyboard_actions.dart';
 import 'package:keyboard_actions/keyboard_actions_config.dart';
@@ -44,7 +45,7 @@ class _CustomAmountFieldState extends State<CustomAmountField> {
           controller: _controller,
           keyboardType: TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(
-            labelText: 'Amount',
+            labelText: 'amount'.tr(),
             suffixText: _selectedUnit,
             border: OutlineInputBorder(),
           ),
@@ -85,7 +86,7 @@ class _CustomAmountFieldState extends State<CustomAmountField> {
                   const Spacer(),
                   TextButton(
                     onPressed: () => node.unfocus(),
-                    child: Text('Done'),
+                    child: Text('done'.tr()),
                   ),
                 ],
               );

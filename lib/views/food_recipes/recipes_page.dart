@@ -109,7 +109,7 @@ class _RecipesPageState extends State<RecipesPage>
                               ),
                             ),
                             Text(
-                              'Healthy meals for your little one'.tr(),
+                              'healthy_meals_subtitle'.tr(),
                               style: TextStyle(
                                 fontSize: 14.sp,
                                 color: Colors.grey.shade600,
@@ -213,7 +213,7 @@ class _RecipesPageState extends State<RecipesPage>
           ),
           SizedBox(height: 24.h),
           Text(
-            'Loading delicious recipes...'.tr(),
+            'loading_recipes'.tr(),
             style: TextStyle(
               fontSize: 16.sp,
               color: Colors.grey.shade600,
@@ -244,7 +244,7 @@ class _RecipesPageState extends State<RecipesPage>
           ),
           SizedBox(height: 24.h),
           Text(
-            'No recipes found'.tr(),
+            'no_recipes_found'.tr(),
             style: TextStyle(
               fontSize: 20.sp,
               fontWeight: FontWeight.bold,
@@ -253,7 +253,7 @@ class _RecipesPageState extends State<RecipesPage>
           ),
           SizedBox(height: 8.h),
           Text(
-            'Try adjusting your filters'.tr(),
+            'try_adjusting_filters'.tr(),
             style: TextStyle(fontSize: 14.sp, color: Colors.grey.shade500),
           ),
         ],

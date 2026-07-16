@@ -229,7 +229,7 @@ class _SignInPageState extends State<SignInPage> {
                                         child: Column(
                                           children: [
                                             CustomTextFormField(
-                                              hintText: 'Email',
+                                              hintText: 'email'.tr(),
                                               isPassword: false,
                                               controller: _emailController,
                                               validator:
