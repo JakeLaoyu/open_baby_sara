@@ -3,35 +3,60 @@ import 'package:flutter/material.dart';
 import 'package:open_baby_sara/core/constant/iso_tooth_descriptions_constants.dart';
 import 'package:open_baby_sara/data/models/activity_model.dart';
 
-/// Calculates the total feed amount from a list of feed activities.
+const double _mlPerOz = 29.5735;
+
+double _convertAmount(double value, String fromUnit, String toUnit) {
+  if (fromUnit == toUnit) return value;
+  if (fromUnit == 'oz' && toUnit == 'ml') return value * _mlPerOz;
+  if (fromUnit == 'ml' && toUnit == 'oz') return value / _mlPerOz;
+  return value;
+}
+
+/// Returns the single unit shared by all activities, or 'ml' when units are
+/// mixed (amounts are then normalized to ml) or missing.
+String _resolveUnit(List<ActivityModel> activities) {
+  String? unit;
+  for (final activity in activities) {
+    final entryUnit = activity.data['totalUnit'];
+    if (entryUnit is String && entryUnit.trim().isNotEmpty) {
+      if (unit == null) {
+        unit = entryUnit;
+      } else if (unit != entryUnit) {
+        return 'ml';
+      }
+    }
+  }
+  return unit ?? 'ml';
+}
+
+double _sumAmountsIn(String targetUnit, List<ActivityModel> activities) {
+  final sum = activities.fold(0.0, (total, activity) {
+    final amount = (activity.data['totalAmount'] ?? 0).toDouble();
+    final entryUnit = activity.data['totalUnit'];
+    final fromUnit = (entryUnit is String && entryUnit.trim().isNotEmpty)
+        ? entryUnit
+        : targetUnit;
+    return total + _convertAmount(amount, fromUnit, targetUnit);
+  });
+  return double.parse(sum.toStringAsFixed(1));
+}
+
+/// Calculates the total feed amount from a list of feed activities,
+/// converting entries to the unit reported by [getFeedUnit].
 double calculateTotalFeedAmount(List<ActivityModel> feedActivities) {
-  return feedActivities.fold(
-    0.0,
-    (sum, activity) => sum + ((activity.data['totalAmount'] ?? 0).toDouble()),
-  );
+  return _sumAmountsIn(getFeedUnit(feedActivities), feedActivities);
 }
 
 String getFeedUnit(List<ActivityModel> feedActivities) {
-  for (final activity in feedActivities) {
-    final unit = activity.data['totalUnit'];
-    if (unit != null && unit is String && unit.trim().isNotEmpty) {
-      return unit;
-    }
-  }
-  return 'ml';
+  return _resolveUnit(feedActivities);
 }
 
 double calculateTotalPumpAmount(List<ActivityModel> pumpActivities) {
-  return pumpActivities.fold(
-    0.0,
-    (sum, activity) => sum + ((activity.data['totalAmount'] ?? 0).toDouble()),
-  );
+  return _sumAmountsIn(getPumpUnit(pumpActivities) ?? 'ml', pumpActivities);
 }
 
 String? getPumpUnit(List<ActivityModel> pumpActivities) {
-  return pumpActivities.isNotEmpty
-      ? pumpActivities.first.data['totalUnit'] as String?
-      : null;
+  return pumpActivities.isNotEmpty ? _resolveUnit(pumpActivities) : null;
 }
 
 String formatSleepDuration(List<ActivityModel> sleepActivities) {

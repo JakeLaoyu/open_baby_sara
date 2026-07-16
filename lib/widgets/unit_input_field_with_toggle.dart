@@ -28,7 +28,7 @@ class _UnitInputFieldWithToggleState extends State<UnitInputFieldWithToggle> {
   @override
   void initState() {
     super.initState();
-    selectedUnit = widget.initialUnit ?? 'oz';
+    selectedUnit = widget.initialUnit ?? 'ml';
     if (widget.initialValue != null) {
       _controller.text = widget.initialValue!.toStringAsFixed(1);
     }
@@ -54,16 +54,19 @@ class _UnitInputFieldWithToggleState extends State<UnitInputFieldWithToggle> {
   }
 
   void handleToggleChange(int index) {
-    if (selectedUnit == (index == 0 ? 'oz' : 'ml')) return;
+    if (selectedUnit == (index == 0 ? 'ml' : 'oz')) return;
 
+    final newUnit = index == 0 ? 'ml' : 'oz';
     final currentValue = double.tryParse(_controller.text);
     if (currentValue != null) {
-      final converted = convert(currentValue, selectedUnit);
+      final converted =
+          double.parse(convert(currentValue, selectedUnit).toStringAsFixed(1));
       _controller.text = converted.toStringAsFixed(1);
+      widget.onChanged(converted, newUnit);
     }
 
     setState(() {
-      selectedUnit = index == 0 ? 'oz' : 'ml';
+      selectedUnit = newUnit;
       convertedValue =
           currentValue != null ? convert(currentValue, selectedUnit) : null;
     });
@@ -214,7 +217,7 @@ class _UnitInputFieldWithToggleState extends State<UnitInputFieldWithToggle> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // oz Button
+                    // ml Button
                     GestureDetector(
                       onTap: () => handleToggleChange(0),
                       child: AnimatedContainer(
@@ -225,49 +228,7 @@ class _UnitInputFieldWithToggleState extends State<UnitInputFieldWithToggle> {
                           vertical: 6.h,
                         ),
                         decoration: BoxDecoration(
-                          color: isOzSelected 
-                              ? Colors.white.withOpacity(1.0)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(6.r),
-                          boxShadow: isOzSelected
-                              ? [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 1.5,
-                                    offset: Offset(0, 0.5),
-                                  ),
-                                ]
-                              : [],
-                        ),
-                        child: AnimatedDefaultTextStyle(
-                          duration: Duration(milliseconds: 400),
-                          curve: Curves.easeOutCubic,
-                          style: TextStyle(
-                            color: isOzSelected
-                                ? Color(0xFFBA68C8)
-                                : Colors.grey[600],
-                            fontSize: 13.sp,
-                            fontWeight: isOzSelected
-                                ? FontWeight.w500
-                                : FontWeight.normal,
-                          ),
-                          child: Text('oz'),
-                        ),
-                      ),
-                    ),
-                    
-                    // ml Button
-                    GestureDetector(
-                      onTap: () => handleToggleChange(1),
-                      child: AnimatedContainer(
-                        duration: Duration(milliseconds: 400),
-                        curve: Curves.easeOutCubic,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 10.w,
-                          vertical: 6.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: !isOzSelected 
+                          color: !isOzSelected
                               ? Colors.white.withOpacity(1.0)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(6.r),
@@ -294,6 +255,48 @@ class _UnitInputFieldWithToggleState extends State<UnitInputFieldWithToggle> {
                                 : FontWeight.normal,
                           ),
                           child: Text('ml'),
+                        ),
+                      ),
+                    ),
+
+                    // oz Button
+                    GestureDetector(
+                      onTap: () => handleToggleChange(1),
+                      child: AnimatedContainer(
+                        duration: Duration(milliseconds: 400),
+                        curve: Curves.easeOutCubic,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10.w,
+                          vertical: 6.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isOzSelected
+                              ? Colors.white.withOpacity(1.0)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(6.r),
+                          boxShadow: isOzSelected
+                              ? [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.05),
+                                    blurRadius: 1.5,
+                                    offset: Offset(0, 0.5),
+                                  ),
+                                ]
+                              : [],
+                        ),
+                        child: AnimatedDefaultTextStyle(
+                          duration: Duration(milliseconds: 400),
+                          curve: Curves.easeOutCubic,
+                          style: TextStyle(
+                            color: isOzSelected
+                                ? Color(0xFFBA68C8)
+                                : Colors.grey[600],
+                            fontSize: 13.sp,
+                            fontWeight: isOzSelected
+                                ? FontWeight.w500
+                                : FontWeight.normal,
+                          ),
+                          child: Text('oz'),
                         ),
                       ),
                     ),
